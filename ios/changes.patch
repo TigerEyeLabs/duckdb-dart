@@ -1,0 +1,132 @@
+diff --git a/Makefile b/Makefile
+index 542e17d8dc..3386742bbd 100644
+--- a/Makefile
++++ b/Makefile
+@@ -238,9 +238,19 @@ ifdef DEBUG_STACKTRACE
+ 	CMAKE_VARS:=${CMAKE_VARS} -DDEBUG_STACKTRACE=1
+ endif
+ 
++ifneq ("${IOS_PLATFORM}", "")
++	CMAKE_VARS:=${CMAKE_VARS} -DIOS_PLATFORM='${IOS_PLATFORM}'
++endif
++ifneq ("${CMAKE_TOOLCHAIN_FILE}", "")
++	CMAKE_VARS_BUILD:=${CMAKE_VARS_BUILD} -DCMAKE_TOOLCHAIN_FILE='${CMAKE_TOOLCHAIN_FILE}'
++endif
++ifneq ("${BUILD_SHELL}", "")
++	CMAKE_VARS:=${CMAKE_VARS} -DBUILD_SHELL=${BUILD_SHELL}
++endif
++
+ # Enable VCPKG for this build
+ ifneq ("${VCPKG_TOOLCHAIN_PATH}", "")
+-	CMAKE_VARS_BUILD:=${CMAKE_VARS_BUILD} -DCMAKE_TOOLCHAIN_FILE='${VCPKG_TOOLCHAIN_PATH}' -DVCPKG_BUILD=1
++	CMAKE_VARS_BUILD:=${CMAKE_VARS_BUILD} -DVCPKG_TOOLCHAIN_PATH='${VCPKG_TOOLCHAIN_PATH}' -DVCPKG_BUILD=1
+ endif
+ ifneq ("${VCPKG_TARGET_TRIPLET}", "")
+ 	CMAKE_VARS_BUILD:=${CMAKE_VARS_BUILD} -DVCPKG_TARGET_TRIPLET='${VCPKG_TARGET_TRIPLET}'
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 06c0c9a096..f1dc1eec2e 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -41,6 +41,45 @@ if(MSVC)
+   add_definitions(/bigobj)
+ endif()
+ 
++string(SUBSTRING ${DUCKDB_VERSION} 1 -1 DUCKDB_VERSION_NO_PREFIX)
++
++set(INFO_PLIST_CONTENT "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
++<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
++<plist version=\"1.0\">
++<dict>
++    <key>CFBundleDevelopmentRegion</key>
++    <string>en</string>
++    <key>CFBundleExecutable</key>
++    <string>duckdb</string>
++    <key>CFBundleIdentifier</key>
++    <string>org.duckdb</string>
++    <key>CFBundleInfoDictionaryVersion</key>
++    <string>6.0</string>
++    <key>CFBundleName</key>
++    <string>duckdb</string>
++    <key>CFBundlePackageType</key>
++    <string>FMWK</string>
++    <key>CFBundleShortVersionString</key>
++    <string>1.0</string>
++    <key>CFBundleSignature</key>
++    <string>????</string>
++    <key>CFBundleVersion</key>
++    <string>${DUCKDB_VERSION_NO_PREFIX}</string>
++    <key>MinimumOSVersion</key>
++    <string>${CMAKE_OSX_DEPLOYMENT_TARGET}</string>
++    <key>CFBundleSupportedPlatforms</key>
++    <array>
++      <string>${IOS_PLATFORM}</string>
++    </array>
++</dict>
++</plist>")
++
++configure_file(
++    ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in
++    ${CMAKE_CURRENT_BINARY_DIR}/Info.plist
++    @ONLY
++)
++
+ if(AMALGAMATION_BUILD)
+ 
+   add_library(duckdb SHARED "${PROJECT_SOURCE_DIR}/src/amalgamation/duckdb.cpp")
+@@ -104,6 +143,13 @@ else()
+   link_threads(duckdb_static)
+   link_extension_libraries(duckdb_static)
+ 
++  add_library(duckdb_framework SHARED
++    ${ALL_OBJECT_FILES}
++    "${PROJECT_SOURCE_DIR}/src/include/duckdb.h")
++  target_link_libraries(duckdb_framework ${DUCKDB_LINK_LIBS})
++  link_threads(duckdb_framework)
++  link_extension_libraries(duckdb_framework)
++
+   target_include_directories(
+     duckdb PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+@@ -112,6 +158,21 @@ else()
+     duckdb_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+ 
++  target_include_directories(
++    duckdb_framework PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
++                  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
++
++  set_target_properties(
++    duckdb_framework PROPERTIES
++                     OUTPUT_NAME "duckdb"
++                     FRAMEWORK TRUE
++                     FRAMEWORK_VERSION A
++                     MACOSX_FRAMEWORK_IDENTIFIER org.duckdb
++                     MACOSX_FRAMEWORK_INFO_PLIST ${CMAKE_CURRENT_BINARY_DIR}/Info.plist
++                     PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/src/include/duckdb.h"
++                     VERSION 1.0.0
++                     SOVERSION 1.0.0)
++
+   install(
+     DIRECTORY "${PROJECT_SOURCE_DIR}/src/include/duckdb"
+     DESTINATION "${INSTALL_INCLUDE_DIR}"
+@@ -125,8 +186,10 @@ else()
+ endif()
+ 
+ install(
+-  TARGETS duckdb duckdb_static
++  TARGETS duckdb duckdb_static duckdb_framework
+   EXPORT "${DUCKDB_EXPORT_SET}"
+   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
+   ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
+-  RUNTIME DESTINATION "${INSTALL_BIN_DIR}")
++  RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
++  FRAMEWORK DESTINATION "${INSTALL_LIB_DIR}"
++  PUBLIC_HEADER DESTINATION "include")
+diff --git a/src/Info.plist.in b/src/Info.plist.in
+new file mode 100644
+index 0000000000..6a2337574f
+--- /dev/null
++++ b/src/Info.plist.in
+@@ -0,0 +1 @@
++@INFO_PLIST_CONTENT@
+\ No newline at end of file

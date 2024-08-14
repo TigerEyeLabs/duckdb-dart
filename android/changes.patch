@@ -1,0 +1,81 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ec66b57193..7933699f36 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -366,6 +366,9 @@ option(EXTENSION_STATIC_BUILD
+ 
+ if(WIN32 OR ZOS)
+   set(EXTENSION_STATIC_BUILD TRUE)
++elseif(ANDROID)
++  set(EXTENSION_STATIC_BUILD TRUE)
++  set(DISABLE_VPTR_SANITIZER TRUE)
+ endif()
+ 
+ option(BUILD_EXTENSIONS_ONLY "Build all extension as linkable, overriding DONT_LINK, and don't build core." FALSE)
+diff --git a/Makefile b/Makefile
+index 542e17d8dc..1d9fc93afe 100644
+--- a/Makefile
++++ b/Makefile
+@@ -238,9 +238,13 @@ ifdef DEBUG_STACKTRACE
+ 	CMAKE_VARS:=${CMAKE_VARS} -DDEBUG_STACKTRACE=1
+ endif
+ 
++ifneq ("${ANDROID_TOOLCHAIN_PATH}", "")
++	CMAKE_VARS_BUILD:=${CMAKE_VARS_BUILD} -DCMAKE_TOOLCHAIN_FILE='${ANDROID_TOOLCHAIN_PATH}'
++endif
++
+ # Enable VCPKG for this build
+ ifneq ("${VCPKG_TOOLCHAIN_PATH}", "")
+-	CMAKE_VARS_BUILD:=${CMAKE_VARS_BUILD} -DCMAKE_TOOLCHAIN_FILE='${VCPKG_TOOLCHAIN_PATH}' -DVCPKG_BUILD=1
++	CMAKE_VARS_BUILD:=${CMAKE_VARS_BUILD} -DVCPKG_TOOLCHAIN_PATH='${VCPKG_TOOLCHAIN_PATH}' -DVCPKG_BUILD=1
+ endif
+ ifneq ("${VCPKG_TARGET_TRIPLET}", "")
+ 	CMAKE_VARS_BUILD:=${CMAKE_VARS_BUILD} -DVCPKG_TARGET_TRIPLET='${VCPKG_TARGET_TRIPLET}'
+diff --git a/extension/jemalloc/jemalloc/src/jemalloc.cpp b/extension/jemalloc/jemalloc/src/jemalloc.cpp
+index ae74794952..9200f32f21 100644
+--- a/extension/jemalloc/jemalloc/src/jemalloc.cpp
++++ b/extension/jemalloc/jemalloc/src/jemalloc.cpp
+@@ -742,7 +742,7 @@ malloc_ncpus(void) {
+ #  else
+ 		cpu_set_t set;
+ #  endif
+-#  if defined(JEMALLOC_HAVE_SCHED_SETAFFINITY)
++#  if defined(JEMALLOC_HAVE_SCHED_SETAFFINITY) || defined(__ANDROID__)
+ 		sched_getaffinity(0, sizeof(set), &set);
+ #  else
+ 		pthread_getaffinity_np(pthread_self(), sizeof(set), &set);
+@@ -779,7 +779,7 @@ malloc_cpu_count_is_deterministic()
+ #    else
+ 	cpu_set_t set;
+ #    endif /* __FreeBSD__ */
+-#    if defined(JEMALLOC_HAVE_SCHED_SETAFFINITY)
++#    if defined(JEMALLOC_HAVE_SCHED_SETAFFINITY) || defined(__ANDROID__)
+ 	sched_getaffinity(0, sizeof(set), &set);
+ #    else /* !JEMALLOC_HAVE_SCHED_SETAFFINITY */
+ 	pthread_getaffinity_np(pthread_self(), sizeof(set), &set);
+diff --git a/test/helpers/CMakeLists.txt b/test/helpers/CMakeLists.txt
+index b4798e6a55..e31bd42bc2 100644
+--- a/test/helpers/CMakeLists.txt
++++ b/test/helpers/CMakeLists.txt
+@@ -5,3 +5,8 @@ add_library(test_helpers STATIC ${DUCKDB_TEST_HELPERS_UNITS})
+ if(NOT WIN32)
+   target_link_libraries(test_helpers duckdb)
+ endif()
++
++if(ANDROID)
++  find_library(log-lib log)
++  target_link_libraries(test_helpers ${log-lib})
++endif()
+diff --git a/tools/sqlite3_api_wrapper/CMakeLists.txt b/tools/sqlite3_api_wrapper/CMakeLists.txt
+index e29c33e54b..1d1d6f507b 100644
+--- a/tools/sqlite3_api_wrapper/CMakeLists.txt
++++ b/tools/sqlite3_api_wrapper/CMakeLists.txt
+@@ -43,3 +43,8 @@ if(WIN32 OR ZOS)
+ else()
+   target_link_libraries(test_sqlite3_api_wrapper sqlite3_api_wrapper)
+ endif()
++
++if(ANDROID)
++  find_library(log-lib log)
++  target_link_libraries(test_sqlite3_api_wrapper sqlite3_api_wrapper ${log-lib})
++endif()

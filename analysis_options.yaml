@@ -1,0 +1,9 @@
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options
+include: package:dart_duckdb/package.yaml
+
+
+analyzer:
+  exclude:
+    - examples/**
+    - '**/*.g.dart'
