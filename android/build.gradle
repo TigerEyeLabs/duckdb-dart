@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 group 'com.tigereye.duckdb_libs'
 version '2.1.0'
 
@@ -24,7 +26,6 @@ allprojects {
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
-
 android {
     compileSdkVersion 34
 
@@ -43,5 +44,54 @@ android {
 
     defaultConfig {
         minSdkVersion 21 //current flutter min sdk version
+
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
     }
 }
+
+def jniLibsDir = "$projectDir/src/main/jniLibs"
+
+def zipFiles = [
+    'arm64-v8a': 'https://github.com/TigerEyeLabs/duckdb-dart/releases/download/v1.0.1/libduckdb-android_arm64-v8a.zip',
+    'armeabi-v7a': 'https://github.com/TigerEyeLabs/duckdb-dart/releases/download/v1.0.1/libduckdb-android_armeabi-v7a.zip'
+]
+
+task downloadAndExtractDuckDB {
+    doLast {
+        zipFiles.each { abi, url ->
+            def libDir = file("$jniLibsDir/$abi")
+            def libFile = file("$libDir/libduckdb.so")
+            if (!libFile.exists()) {
+                def tmpDir = file("$buildDir/tmp")
+                tmpDir.mkdirs()
+                def zipFile = file("$tmpDir/duckdb-${abi}.zip")
+
+                // Ensure the jniLibs directory for this ABI exists
+                libDir.mkdirs()
+
+                // Download the zip file
+                println "Downloading $url"
+                new URL(url).withInputStream { i ->
+                    zipFile.withOutputStream { it << i }
+                }
+
+                // Extract the zip file
+                println "Extracting to $libDir"
+                copy {
+                    from zipTree(zipFile)
+                    into libDir
+                    include "*.so"
+                }
+
+                // Clean up the zip file
+                delete zipFile
+            } else {
+                println "Library for $abi already exists, skipping download"
+            }
+        }
+    }
+}
+
+preBuild.dependsOn downloadAndExtractDuckDB
