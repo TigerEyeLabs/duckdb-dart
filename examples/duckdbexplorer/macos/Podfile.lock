@@ -1,5 +1,5 @@
 PODS:
-  - dart_duckdb (1.0.0):
+  - dart_duckdb (1.0.2):
     - FlutterMacOS
   - FlutterMacOS (1.0.0)
   - path_provider_foundation (0.0.1):
@@ -20,7 +20,7 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
 
 SPEC CHECKSUMS:
-  dart_duckdb: a2b840d4471ae883b8c0a95fadbc219ed5af70e9
+  dart_duckdb: 68bc88ad169abc153b9fe46c7ea43e5667bacb2a
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
 
