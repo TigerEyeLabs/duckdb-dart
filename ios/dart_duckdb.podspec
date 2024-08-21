@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
     s.name             = 'dart_duckdb'
-    s.version          = '1.0.0'
+    s.version          = '1.0.2'
     s.summary          = 'A new flutter plugin project.'
     s.description      = <<-DESC
   A new flutter plugin project.
