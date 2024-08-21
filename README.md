@@ -28,7 +28,7 @@ Then, run `dart pub get` to install the package.
 
 Here are some common use cases for DuckDB.Dart:
 
-### Querying a CSV File
+### Querying a Database
 
 ```dart
 import 'package:dart_duckdb/dart_duckdb.dart';
