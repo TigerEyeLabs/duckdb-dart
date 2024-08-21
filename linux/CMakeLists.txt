@@ -10,7 +10,7 @@ set(DUCKDB_DOWNLOAD_URL "https://github.com/duckdb/duckdb/releases/download/v1.0
 set(DUCKDB_DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/duckdb_download")
 set(DUCKDB_ZIP_FILE "${DUCKDB_DOWNLOAD_DIR}/libduckdb-linux-amd64.zip")
 set(DUCKDB_EXTRACT_DIR "${DUCKDB_DOWNLOAD_DIR}/extracted")
-set(DUCKDB_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/Release")
+set(DUCKDB_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/release")
 set(DUCKDB_LIB_FILE "${DUCKDB_LIB_DIR}/libduckdb.so")
 
 if(NOT EXISTS ${DUCKDB_LIB_FILE})
@@ -34,7 +34,7 @@ if(NOT EXISTS ${DUCKDB_LIB_FILE})
   endif()
   message(STATUS "Extraction completed successfully")
 
-  message(STATUS "Copying DuckDB library to Libraries/Release directory...")
+  message(STATUS "Copying DuckDB library to Libraries/release directory...")
   file(MAKE_DIRECTORY ${DUCKDB_LIB_DIR})
   file(COPY ${DUCKDB_EXTRACT_DIR}/libduckdb.so DESTINATION ${DUCKDB_LIB_DIR})
   message(STATUS "DuckDB library copied to: ${DUCKDB_LIB_FILE}")
