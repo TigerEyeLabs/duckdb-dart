@@ -13,17 +13,6 @@ DuckDB is a high-performance analytical database system known for its speed, rel
 
 For more information on DuckDB's goals and capabilities, visit the [Why DuckDB page](https://duckdb.org/why_duckdb).
 
-## Installation
-
-To add DuckDB to your Dart project, include it in your `pubspec.yaml` dependencies:
-
-```yaml
-dependencies:
-  dart_duckdb: ^1.0.0
-```
-
-Then, run `dart pub get` to install the package.
-
 ## Usage Examples
 
 Here are some common use cases for DuckDB.Dart:
@@ -53,7 +42,7 @@ void main() {
 }
 ```
 
-### Concurrent Queries
+### Queries on background Isolates
 
 ```dart
 import 'package:dart_duckdb/dart_duckdb.dart';
@@ -71,6 +60,7 @@ void main() {
 void backgroundTask(TransferableDatabase transferableDb) {
   final connection = duckdb.connectWithTransferred(transferableDb);
   // Access database ...
+  // fetch is needed to send the data back to the main isolate
 }
 
 ```
@@ -92,13 +82,13 @@ If you encounter any issues or have questions, please check our [issue tracker](
 ---
 
 
-## Building DuckDB.Dart
+## Building DuckDB.Dart from Source
 
 ### Install Dependencies
 
 Install fvm, [Getting Started](https://fvm.app/documentation/getting-started/installation)
 
-Install any platform dependencies for DuckDB. [DuckDB Building Instructions](https://duckdb.org/docs/dev/building/build_instructions.html).
+Install any platform dependencies for DuckDB. Here are the [DuckDB Building Instructions](https://duckdb.org/docs/dev/building/build_instructions.html). Also, the github workflows are the best examples to learn from.
 
 ### Build DuckDB
 
@@ -134,9 +124,7 @@ To build for Android:
 make android
 ```
 
-#### Windows (Requires PowerShell)
-
-To build for Windows:
+#### Windows (Requires MINGW64)
 
 ```sh
 cd windows && ./getduck.ps1
