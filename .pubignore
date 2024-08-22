@@ -1,0 +1,22 @@
+# Ignore build artifacts
+build/
+.dart_tool/
+.pub/
+
+# Ignore IDE and system files
+.idea/
+.DS_Store
+
+# Ignore examples
+examples/
+
+# Ignore test files
+test/
+
+# Ignore unnecessary configuration files
+pubspec.lock
+package-lock.json
+
+# Ignore large resource files
+*.png
+*.jpg
