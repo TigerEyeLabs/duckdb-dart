@@ -1,5 +1,5 @@
 PODS:
-  - dart_duckdb (1.0.2):
+  - dart_duckdb (1.0.3):
     - Flutter
   - DKImagePickerController/Core (4.3.9):
     - DKImagePickerController/ImageDataManager
@@ -68,7 +68,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
 
 SPEC CHECKSUMS:
-  dart_duckdb: 061a814c1fb4ac9eef89ba8ef47248285483f2ab
+  dart_duckdb: 180718723db39ad1fa2d57a34810bf54c43c0e5a
   DKImagePickerController: 946cec48c7873164274ecc4624d19e3da4c1ef3c
   DKPhotoGallery: b3834fecb755ee09a593d7c9e389d8b5d6deed60
   file_picker: ce3938a0df3cc1ef404671531facef740d03f920

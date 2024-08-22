@@ -1,6 +1,6 @@
 name: dart_duckdb
 description: Provides lightweight yet convenient bindings to DuckDB by using dart:ffi
-version: 1.0.2
+version: 1.0.3
 homepage: https://github.com/TigerEyeLabs/duckdb-dart
 issue_tracker: https://github.com/duckdb/duckdb/issues
 
