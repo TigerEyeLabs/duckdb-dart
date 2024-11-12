@@ -1,3 +1,4 @@
+///// https://github.com/simolus3/sqlite3.dart/blob/main/sqlite3/lib/src/implementation/finalizer.dart
 const _debugFinalizers = false;
 
 /// Some core part of a database, connection or statement that can be used to

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:dart_duckdb/dart_duckdb.dart';
 import 'package:dart_duckdb/src/impl/implementation.dart';
@@ -199,38 +201,12 @@ void main() {
     roundTripTest("INTERVAL", [Interval(months: 1, days: 2, microseconds: 3)]);
   });
 
-  // TODO: Add the timezone package, Dart DateTime doesn't include timezone information.
-  // test('can round trip timestamp with non-GMT timezone', () {
-  //   roundTripTest(
-  //       "TIMESTAMP WITH TIME ZONE", [DateTime.parse('1992-09-20 00:00:00')]);
-  // });
-
   test('can round trip time', () {
     roundTripTest("Time", [
       Time(hour: 0, minute: 0, second: 0, microsecond: 0),
       Time(hour: 12, minute: 30, second: 45, microsecond: 123456),
       null,
     ]);
-  });
-
-  test('can round trip lists', () {
-    final tigerEyeHaiku = [
-      ['Tiger eye', 'gleaming', 'stone'],
-      ['Mysterious and bold its hue'],
-      ['Captivating', 'sight'],
-    ];
-
-    connection.execute("CREATE TABLE t1 (int_list TEXT[]);");
-    connection
-        .execute("INSERT INTO t1 VALUES (['Tiger eye', 'gleaming', 'stone'])");
-    connection
-        .execute("INSERT INTO t1 VALUES (['Mysterious and bold its hue'])");
-    connection.execute("INSERT INTO t1 VALUES (['Captivating', 'sight'])");
-    final result = connection.query("SELECT * FROM t1;");
-
-    for (var i = 0; i < result.rowCount; i++) {
-      expect(result[0][i], tigerEyeHaiku[i]);
-    }
   });
 
   group('database parameters tests', () {
@@ -310,6 +286,168 @@ void main() {
       for (var i = 0; i < tigerEyeHaiku.length; i++) {
         expect(rows[i], tigerEyeHaiku[i], reason: "comparing the $i value.");
       }
+    });
+  });
+
+  test('can round trip BLOBS', () {
+    roundTripTest(
+      "BLOB",
+      [
+        Uint8List.fromList([1, 2, 3, 4, 5]),
+        Uint8List.fromList([6, 7, 8, 9, 10]),
+        null,
+      ],
+    );
+  });
+
+  test('can round trip List<double>', () {
+    roundTripTest(
+      "DOUBLE[]",
+      <List<double>?>[
+        <double>[1, 2, 3, 4, 5],
+        <double>[6, 7, 8, 9, 10],
+        [],
+        null,
+      ],
+    );
+  });
+
+  test('can round trip List<String>', () {
+    roundTripTest(
+      "VARCHAR[]",
+      <List<String>?>[
+        ['Tiger eye', 'gleaming', 'stone'],
+        ['Mysterious and bold its hue'],
+        ['Captivating', 'sight'],
+        [],
+        null,
+      ],
+    );
+  });
+
+  test('can round trip Map<String, Object>', () {
+    roundTripTest(
+      "STRUCT(v VARCHAR, i INTEGER)",
+      <Map<String, Object>>[
+        {'v': 'a', 'i': 42},
+      ],
+    );
+  });
+
+  test('can round trip Map<String, Object> with lists', () {
+    roundTripTest(
+      "STRUCT(v VARCHAR, i INTEGER[])",
+      <Map<String, Object>>[
+        {
+          'v': 'a',
+          'i': [42],
+        },
+      ],
+    );
+  });
+
+  test('can round trip Map<String, Object> with nested structs', () {
+    roundTripTest(
+      "STRUCT(name VARCHAR, address STRUCT(street VARCHAR, city VARCHAR))",
+      <Map<String, Object>>[
+        {
+          'name': 'John',
+          'address': {
+            'street': '123 Main St',
+            'city': 'Anytown',
+          },
+        },
+      ],
+    );
+  });
+
+  group('pending result tests', () {
+    test('can execute pending result', () async {
+      final statement = PreparedStatementImpl.prepare(connection, "SELECT 1");
+      await expectLater(
+        statement
+            .executeAsync()
+            .value
+            .then((resultSet) => resultSet?.fetchAll().first.first),
+        completion(equals(1)),
+      );
+    });
+
+    test('can execute pending result with a time-consuming query', () async {
+      final statement = PreparedStatementImpl.prepare(connection, """
+            SELECT SUM(a.range + b.range)
+            FROM range(20000) AS a
+            CROSS JOIN range(30000) AS b;
+          """);
+
+      // Set up a StreamController for progress updates
+      final progressController = StreamController<double>();
+      final progressUpdates = <double>[];
+
+      // Listen to the progress updates
+      progressController.stream.listen(
+        (progress) {
+          progressUpdates.add(progress);
+        },
+      );
+
+      // Execute the statement asynchronously with progress reporting
+      final result = await statement
+          .executeAsync(progressController: progressController)
+          .valueOrCancellation();
+
+      final row = result?.fetchAll().first;
+
+      // Verify the actual result values
+      expect(row, hasLength(1));
+      expect(row?[0], equals(BigInt.from(14999400000000)));
+      expect(progressUpdates, contains(1.0));
+
+      // Clean up
+      await progressController.close();
+    });
+
+    test('can cancel pending result execution mid-await', () async {
+      // Create a query that will run for a while without heavy data generation
+      final statement = PreparedStatementImpl.prepare(connection, """
+            SELECT SUM(a.range + b.range)
+            FROM range(20000) AS a
+            CROSS JOIN range(30000) AS b;
+          """);
+
+      // Start the async execution
+      final operation = statement.executeAsync();
+
+      // Schedule the cancellation to occur after a short delay
+      Future.delayed(const Duration(milliseconds: 5), () {
+        operation.cancel();
+      });
+
+      // Wait for the operation to complete or be cancelled
+      final result = await operation.valueOrCancellation();
+
+      // Verify that the operation was cancelled
+      expect(operation.isCanceled, true);
+      expect(result, isNull);
+    });
+
+    test('can timeout pending result execution', () async {
+      final statement = PreparedStatementImpl.prepare(connection, """
+            SELECT SUM(a.range + b.range)
+            FROM range(20000) AS a
+            CROSS JOIN range(30000) AS b;
+          """);
+      final operation = statement.executeAsync();
+      await operation.valueOrCancellation();
+
+      // Execute the statement asynchronously with a short timeout
+      await expectLater(
+        () => statement.executeAsync().valueOrCancellation().timeout(
+              const Duration(milliseconds: 100),
+              onTimeout: () => throw TimeoutException('Query timed out'),
+            ),
+        throwsA(isA<TimeoutException>()),
+      );
     });
   });
 }

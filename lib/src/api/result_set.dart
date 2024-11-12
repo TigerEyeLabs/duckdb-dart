@@ -37,12 +37,36 @@ abstract class ResultSet {
 
   /// Fetch the next row of a query result set, returning a single sequence,
   /// or null when no more data is available.
-  List? fetchOne();
+  List<Object?>? fetchOne();
 
   /// Fetch all (remaining) rows of a query result, returning them
   /// as a sequence of sequences (e.g. a list of lists). Return an
   /// empty list when no more data is available.
-  List<List> fetchAll();
+  ///
+  /// Parameters:
+  ///   [batchSize] - Optional batch size for internal processing.
+  ///                 Defaults to DuckDB's vector size.
+  List<List<Object?>> fetchAll({int? batchSize});
+
+  /// Streams all rows from the result set.
+  ///
+  /// This is an async generator that produces rows one at a time,
+  /// allowing for memory-efficient processing of large result sets.
+  /// The stream can be interrupted at any time by canceling the subscription
+  /// or breaking from the await-for loop.
+  ///
+  /// Example:
+  /// ```dart
+  /// await for (final row in resultSet.fetchAllStream()) {
+  ///   // Process row
+  ///   if (someCondition) break; // Stop processing
+  /// }
+  /// ```
+  ///
+  /// Parameters:
+  ///   [batchSize] - Optional batch size for internal processing.
+  ///                 Defaults to DuckDB's vector size.
+  Stream<List<Object?>> fetchAllStream({int? batchSize});
 
   /// Retrieves the database type for the column.
   DatabaseType columnDataType(int columnIndex);

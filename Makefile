@@ -61,6 +61,10 @@ else
 	genhtml coverage/duckdb.dart.lcov --branch-coverage -o coverage/html
 endif
 
+.PHONY: explorer
+explorer: ## Build and run duckdbexplorer
+	cd examples/duckdbexplorer && fvm flutter run -d $(BUILD_OS)
+
 analyze: setup ## Run flutter analyze
 	fvm flutter analyze --fatal-infos --fatal-warnings --write analyze.txt
 
@@ -87,7 +91,7 @@ linux: ## Build for Linux
 	cd linux && make all
 
 .PHONY: android
-android: ## Build for Linux
+android: ## Build for Android
 	cd android && make all
 
 ## CI tasks

@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:typed_data';
 
 import 'package:dart_duckdb/dart_duckdb.dart';
@@ -20,6 +21,11 @@ extension DuckdbVector on duckdb_vector {
 
 extension HugeInt on BigInt {
   Pointer<duckdb_hugeint> toHugeInt() {
+    assert(
+      this >= hugeIntMin,
+      'Value is less than the minimum signed 128-bit integer.',
+    );
+
     final hugeInt = allocate<duckdb_hugeint>();
 
     hugeInt.ref.lower = toSigned(64).toInt();
@@ -45,6 +51,11 @@ extension UHugeInt on BigInt {
   }
 
   Pointer<duckdb_uhugeint> toUHugeInt() {
+    assert(
+      this <= uHugeIntMax,
+      'Value exceeds the maximum unsigned 128-bit integer.',
+    );
+
     // Allocate memory for the duckdb_uhugeint structure
     final uhugeInt = allocate<duckdb_uhugeint>();
     // Get the lower 64 bits
@@ -126,5 +137,60 @@ extension SqlString on String {
     }
 
     return params;
+  }
+}
+
+extension DuckdbValuePointerExtension on Pointer<duckdb_value> {
+  /// Creates a List-like view of the allocated duckdb_value array.
+  /// [length] specifies the number of elements in the array.
+  List<duckdb_value> asTypedList(int length) {
+    if (length <= 0) {
+      throw ArgumentError('Length must be positive');
+    }
+    return _DuckdbValueList(this, length);
+  }
+}
+
+/// A List-like wrapper around Pointer<duckdb_value>.
+class _DuckdbValueList extends ListBase<duckdb_value> {
+  final Pointer<duckdb_value> _pointer;
+  @override
+  final int length;
+
+  _DuckdbValueList(this._pointer, this.length);
+
+  @override
+  duckdb_value operator [](int index) {
+    if (index < 0 || index >= length) {
+      throw RangeError.index(index, this, 'index', null, length);
+    }
+    return (_pointer + index).value;
+  }
+
+  @override
+  void operator []=(int index, duckdb_value value) {
+    if (index < 0 || index >= length) {
+      throw RangeError.index(index, this, 'index', null, length);
+    }
+    (_pointer + index).value = value;
+  }
+
+  @override
+  set length(int newLength) {
+    throw UnsupportedError('Cannot change the length of a fixed-length list');
+  }
+}
+
+extension ValidityMask on Pointer<Uint64> {
+  bool isElementNull(int offsetIndex) {
+    if (isNullPointer) {
+      return false;
+    }
+
+    final validityEntryIndex = offsetIndex ~/ 64;
+    final validityBitIndex = offsetIndex % 64;
+    final validityMask = this[validityEntryIndex];
+    final validityBit = 1 << validityBitIndex;
+    return (validityMask & validityBit) == 0;
   }
 }

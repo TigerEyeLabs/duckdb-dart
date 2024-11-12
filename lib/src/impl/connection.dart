@@ -121,13 +121,20 @@ class ConnectionImpl extends Connection {
 
   @override
   Iterable<String> getColumnOrder(String table) {
-    const query = 'SELECT column_name '
-        'FROM information_schema.columns '
-        'WHERE table_name = ? '
-        'ORDER BY ordinal_position';
-    final statement = prepare(query);
-    statement.bindParams([table]);
-    final resultSet = statement.execute();
+    final sql = """
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = '$table'
+      ORDER BY ordinal_position;
+    """;
+
+    final resultSet = query(sql);
     return resultSet.fetchAll().flattened.cast();
+  }
+
+  @override
+  void interrupt() {
+    _ensureOpen();
+    _bindings.duckdb_interrupt(_handle.value);
   }
 }

@@ -12,6 +12,20 @@ DuckDB is a high-performance analytical database system known for its speed, rel
 - Complex types (arrays, structs)
 
 For more information on DuckDB's goals and capabilities, visit the [Why DuckDB page](https://duckdb.org/why_duckdb).
+# DuckDB.Dart
+
+**DuckDB.Dart** is the native Dart API for [DuckDB](https://duckdb.org/), enabling developers to harness the power of DuckDB in Dart-based applications across Apple, iOS, Android, Linux, and Windows platforms.
+
+## DuckDB Overview
+
+DuckDB is a high-performance analytical database system known for its speed, reliability, and ease of use. It supports a comprehensive SQL dialect, offering features such as:
+
+- Arbitrary and nested correlated subqueries
+- Window functions
+- Collations
+- Complex types (arrays, structs)
+
+For more information on DuckDB's goals and capabilities, visit the [Why DuckDB page](https://duckdb.org/why_duckdb).
 
 ## Usage Examples
 
@@ -143,46 +157,3 @@ make linux
 ```sh
 make build
 ```
-
-## Maintaining DuckDB.Dart
-
-### Upgrading DuckDB Versions e.g. 0.9.1 to 0.9.2
-
-To upgrade DuckDB to a newer version, follow these steps:
-
-1. **Clone the DuckDB repository**:
-
-   ```sh
-   git clone https://github.com/duckdb/duckdb && cd duckdb
-   ```
-
-2. **Fetch the latest tags**:
-
-   ```sh
-   git fetch --tags
-   ```
-
-3. **Checkout the old tag** (e.g., v0.9.1):
-
-   ```sh
-   git checkout tags/v0.9.1
-   ```
-
-4. **Apply your previous changes**:
-
-   ```sh
-   git apply ../changes.patch
-   git add . && git commit -m 'Apply previous changes'
-   ```
-
-5. **Rebase to the new tag** (e.g., v0.9.2):
-
-   ```sh
-   git rebase tags/v0.9.2
-   ```
-
-6. **Create an updated patch file**:
-
-   ```sh
-   git diff tags/v0.9.2 > ../changes.patch
-   ```

@@ -1,4 +1,4 @@
-VERSION = v1.0.0
+VERSION = v1.1.3
 DUCKDB_DIR = ./duckdb
 IOS_PLATFORM_SIMULATOR = iPhoneSimulator
 IOS_PLATFORM_DEVICE = iPhoneOS
@@ -7,7 +7,9 @@ IOS_PLATFORM_DEVICE = iPhoneOS
 export CMAKE_TOOLCHAIN_FILE=$(PWD)/ios.toolchain.cmake
 export BUILD_SHELL=0
 
-.PHONY: reset clean sim release help
+.PHONY: all reset clean sim device help
+
+all: reset device ## Full Device Build
 
 reset: ## Reset build environment
 	rm -rf ./Libraries/*

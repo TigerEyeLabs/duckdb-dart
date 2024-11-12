@@ -1,4 +1,4 @@
-VERSION = v1.0.0
+VERSION = v1.1.3
 DUCKDB_DIR = ./duckdb
 
 # common environment variables
@@ -10,7 +10,7 @@ all: reset release ## Full Build
 
 reset: ## Reset build environment
 	rm -rf ./Libraries/*
-	mkdir -p ./Libraries/Release
+	mkdir -p ./Libraries/release
 	rm -rf $(DUCKDB_DIR)
 
 ## Clean duckdb build
@@ -24,7 +24,7 @@ release: duckdb ## x64 linux build
 	@export DUCKDB_PLATFORM=linux_amd64; \
 	export DUCKDB_EXTENSIONS='icu;parquet;json;fts;autocomplete'; \
 	make -C $(DUCKDB_DIR) GEN=ninja release; \
-	mv $(DUCKDB_DIR)/build/release/src/libduckdb.so ./Libraries/Release/libduckdb.so;
+	mv $(DUCKDB_DIR)/build/release/src/libduckdb.so ./Libraries/release/libduckdb.so;
 
 help: ## Display this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

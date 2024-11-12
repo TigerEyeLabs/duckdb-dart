@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_constructors_over_static_methods
 
+import 'dart:typed_data';
+
 import 'package:dart_duckdb/dart_duckdb.dart';
 import 'package:dart_duckdb/src/ffi/duckdb.g.dart';
 import 'package:meta/meta.dart';
@@ -27,23 +29,24 @@ enum DatabaseType {
   interval(DUCKDB_TYPE.DUCKDB_TYPE_INTERVAL, Interval),
   hugeInt(DUCKDB_TYPE.DUCKDB_TYPE_HUGEINT, BigInt),
   varchar(DUCKDB_TYPE.DUCKDB_TYPE_VARCHAR, String),
-  blob(DUCKDB_TYPE.DUCKDB_TYPE_BLOB, null),
+  blob(DUCKDB_TYPE.DUCKDB_TYPE_BLOB, Uint8List),
   decimal(DUCKDB_TYPE.DUCKDB_TYPE_DECIMAL, Decimal),
   timestampS(DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_S, DateTime),
   timestampMS(DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_MS, DateTime),
   timestampNS(DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_NS, DateTime),
   enumeration(DUCKDB_TYPE.DUCKDB_TYPE_ENUM, null),
   list(DUCKDB_TYPE.DUCKDB_TYPE_LIST, List),
-  structure(DUCKDB_TYPE.DUCKDB_TYPE_STRUCT, Map<String, dynamic>),
+  structure(DUCKDB_TYPE.DUCKDB_TYPE_STRUCT, Map<String, Object>),
   map(DUCKDB_TYPE.DUCKDB_TYPE_MAP, null),
   uuid(DUCKDB_TYPE.DUCKDB_TYPE_UUID, null),
   union(DUCKDB_TYPE.DUCKDB_TYPE_UNION, null),
-  bit(DUCKDB_TYPE.DUCKDB_TYPE_BIT, null),
+  bitString(DUCKDB_TYPE.DUCKDB_TYPE_BIT, String),
   timeTz(DUCKDB_TYPE.DUCKDB_TYPE_TIME_TZ, null),
   timestampTz(DUCKDB_TYPE.DUCKDB_TYPE_TIMESTAMP_TZ, DateTime),
   uHugeInt(DUCKDB_TYPE.DUCKDB_TYPE_UHUGEINT, BigInt),
   array(DUCKDB_TYPE.DUCKDB_TYPE_ARRAY, null),
-  ;
+  any(DUCKDB_TYPE.DUCKDB_TYPE_ANY, null),
+  varInt(DUCKDB_TYPE.DUCKDB_TYPE_VARINT, null);
 
   /// Used to ensure that the order of this enum matches the order of the DUCKDB_TYPE enum.
   /// This guards against regressions and enables the use [] indexing when mapping types.
@@ -57,7 +60,8 @@ enum DatabaseType {
 
   const DatabaseType(this._value, this.dartType);
 
-  // ignore: unused_field
+  int get value => _value;
+
   final int _value;
   final Type? dartType;
 

@@ -26,6 +26,19 @@ class Decimal implements Comparable<Decimal> {
     }
   }
 
+  /// Create a new [Decimal] from a Dart [num] (int or double).
+  factory Decimal.fromNum(num value) {
+    if (value is int) {
+      return Decimal(BigInt.from(value));
+    } else {
+      if (value.isInfinite || value.isNaN) {
+        throw ArgumentError('Cannot create Decimal from Infinity or NaN');
+      }
+      // Convert the double to a string and parse it
+      return Decimal.parse(value.toString());
+    }
+  }
+
   static const _dot = 0x2e; // '.'
   static const _zero = 0x30; // '0'
   static const _minus = 0x2d; // '-'

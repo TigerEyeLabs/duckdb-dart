@@ -55,6 +55,18 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _openInMemoryDatabase();
+  }
+
+  void _openInMemoryDatabase() {
+    _database = duckdb.open(':memory:');
+    _connection = duckdb.connect(_database!);
+    setState(() {});
+  }
+
   Future<void> _openDatabase() async {
     String? filePath = await FilePicker.platform
         .pickFiles(
@@ -63,6 +75,10 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
         .then((result) => result?.files.single.path);
 
     if (filePath != null) {
+      // Close the existing database and connection
+      _connection?.dispose();
+      _database?.dispose();
+
       _database = duckdb.open(filePath);
       _connection = duckdb.connect(_database!);
       setState(() {});

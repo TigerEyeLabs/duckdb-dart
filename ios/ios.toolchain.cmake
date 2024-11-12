@@ -6,6 +6,7 @@ set(CMAKE_SYSTEM_NAME iOS)
 set(IOS_PLATFORM $ENV{IOS_PLATFORM} CACHE STRING "iOS platform: iPhoneOS or iPhoneSimulator")
 set(DUCKDB_PLATFORM $ENV{DUCKDB_PLATFORM})
 set(SUPPORTED_PLATFORMS "MacOS")
+set(VCPKG_TOOLCHAIN_PATH $ENV{VCPKG_TOOLCHAIN_PATH})
 
 # Determine the correct SDK and architecture based on the platform
 if(IOS_PLATFORM STREQUAL "iPhoneSimulator")

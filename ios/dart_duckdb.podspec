@@ -25,9 +25,9 @@ A new flutter plugin project.
   # Use a pre-install hook to check if the library exists
   s.prepare_command = <<-CMD
     mkdir -p Libraries/release  # Ensure the directory exists
-    if [ ! -f "Libraries/release/libduckdb.dylib" ]; then
+    if [ ! -d "Libraries/release/duckdb.framework" ]; then
       echo "Downloading DuckDB library..."
-      curl -L -o duckdb-framework-ios.zip "https://github.com/TigerEyeLabs/duckdb-dart/releases/download/v1.0.1/duckdb-framework-ios.zip"
+      curl -L -o duckdb-framework-ios.zip "https://github.com/TigerEyeLabs/duckdb-dart/releases/download/v1.1.3/duckdb-framework-ios.zip"
       unzip -o duckdb-framework-ios.zip -d Libraries/release/
       rm duckdb-framework-ios.zip
     else

@@ -1,4 +1,4 @@
-VERSION = v1.0.0
+VERSION = v1.1.3
 DUCKDB_DIR = ./duckdb
 
 # common environment variables
