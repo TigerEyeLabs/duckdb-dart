@@ -20,6 +20,7 @@ class _FinalizableLogicalType extends FinalizablePart {
 
 class LogicalType {
   final Bindings _bindings;
+  var _isDisposed = false;
 
   final _FinalizableLogicalType _finalizable;
   final Finalizer<FinalizablePart> _finalizer = disposeFinalizer;
@@ -37,6 +38,12 @@ class LogicalType {
     return LogicalType._(duckdb.bindings, logicalType);
   }
 
+  factory LogicalType.fromDatabaseType(DatabaseType type) {
+    final logicalType = calloc<duckdb_logical_type>();
+    logicalType.value = duckdb.bindings.duckdb_create_logical_type(type.value);
+    return LogicalType._(duckdb.bindings, logicalType);
+  }
+
   DatabaseType get dataType => _dataType ??=
       DatabaseType.values[_bindings.duckdb_get_type_id(handle[0])];
 
@@ -44,6 +51,15 @@ class LogicalType {
 
   int bytesPerElement() {
     return Int32List.bytesPerElement;
+  }
+
+  void dispose() {
+    if (_isDisposed) {
+      return;
+    }
+    _isDisposed = true;
+    _finalizer.detach(this);
+    _finalizable.dispose();
   }
 }
 

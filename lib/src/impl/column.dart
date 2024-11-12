@@ -1,6 +1,6 @@
 part of 'implementation.dart';
 
-class ColumnImpl extends Column {
+class ColumnImpl<T> extends Column<T> {
   /// result of a duckdb query/prepared statement.
   final ResultSet _result;
   ResultSet get result => _result;
@@ -10,12 +10,12 @@ class ColumnImpl extends Column {
   int get columnIndex => _columnIndex;
 
   /// method to safely unwrap a duckdb type and return a dart type
-  final dynamic Function(int) _itemAt;
+  final T? Function(int) _itemAt;
 
   ColumnImpl(this._result, this._columnIndex, this._itemAt);
 
   @override
-  dynamic operator [](int index) {
+  T? operator [](int index) {
     return _itemAt(index);
   }
 }

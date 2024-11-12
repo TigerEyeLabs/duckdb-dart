@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:async/async.dart';
 import 'package:dart_duckdb/src/api/database_type.dart';
 import 'package:dart_duckdb/src/api/result_set.dart';
 
@@ -48,22 +51,34 @@ abstract class PreparedStatement {
   /// - Throws: ``DuckDBException``
   ///   if there is a type-mismatch between the value being bound and the
   ///   underlying column type
-  void bind(dynamic param, int index);
+  void bind(Object? param, int index);
 
   /// Binds an ordered list of values
   void bindParams(List params);
 
   /// Binds a named value
-  void bindNamed(dynamic param, String name);
+  void bindNamed(Object? param, String name);
 
   /// Binds a map of named values, where the key is the name
-  void bindNamedParams(Map<String, dynamic> params);
+  void bindNamedParams(Map<String, Object?> params);
 
   /// Executes the prepared statement
   ///
   /// Issues the parameterized query to the database using the values previously
   /// bound via the bind methods
   ResultSet execute();
+
+  /// Executes the prepared statement asynchronously, and receive progress updates
+  ///
+  /// Issues the parameterized query to the database using the values previously
+  /// bound via the bind methods. Returns a CancelableOperation that can be used
+  /// to cancel the operation if needed.
+  ///
+  /// Returns: A CancelableOperation<ResultSet?> that completes with the query result
+  /// or null if the operation was cancelled.
+  CancelableOperation<ResultSet?> executeAsync({
+    StreamController<double>? progressController,
+  });
 
   /// Clear the params bound to the prepared statement.
   void clearBinding();

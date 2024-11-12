@@ -23,9 +23,14 @@ class ResultSetImpl extends ResultSet {
   final Finalizer<FinalizablePart> _finalizer = disposeFinalizer;
   late final List<LogicalType?> _logicalTypes;
 
-  final _chunkSizesMap = SplayTreeMap<int, int>();
+  /// https://duckdb.org/docs/api/c/data_chunk
+  // Data chunks represent a horizontal slice of a table. They hold a number of vectors,
+  // each of which can hold up to VECTOR_SIZE rows. The vector size can be obtained through
+  // the duckdb_vector_size function and is configurable, but is usually set to 2048.
   var _currentChunkIndex = 0;
   DataChunkImpl? _currentChunk;
+  final List<int> _chunkOffsets = [];
+  final Map<int, int> _chunkOffsetToChunkIndex = HashMap();
 
   final Bindings _bindings;
 
@@ -40,6 +45,8 @@ class ResultSetImpl extends ResultSet {
   int? _rowCount;
   List<String>? _columnNames;
   List<int>? _columnTypes;
+  late final List<Column<Object?>?> _columnCache =
+      List.filled(columnCount, null);
 
   /// The number of chunks in the result set
   @override
@@ -56,27 +63,20 @@ class ResultSetImpl extends ResultSet {
 
   @override
   List<String> get columnNames {
-    return _columnNames ??= () {
-      final result = <String>[];
-      for (var column = 0; column < columnCount; column++) {
-        final name = _bindings.duckdb_column_name(handle, column);
-        result.add(name.readString());
-      }
-      return result;
-    }();
+    return _columnNames ??= List<String>.generate(
+      columnCount,
+      (index) => _bindings.duckdb_column_name(handle, index).readString(),
+      growable: false,
+    );
   }
 
   @override
   List<int> get columnTypes {
-    return _columnTypes ??= () {
-      final result = <int>[];
-      for (var column = 0; column < columnCount; column++) {
-        final type = _bindings.duckdb_column_type(handle, column);
-        result.add(type);
-      }
-
-      return result;
-    }();
+    return _columnTypes ??= List<int>.generate(
+      columnCount,
+      (column) => _bindings.duckdb_column_type(handle, column),
+      growable: false,
+    );
   }
 
   /// Return the database type for a given column.
@@ -89,9 +89,9 @@ class ResultSetImpl extends ResultSet {
       : _finalizable = _FinalizableResultSet(_bindings, handle) {
     _finalizer.attach(this, _finalizable, detach: this);
 
-    // Filling with nulls, so there will be a null for each column until we have
-    // cached the value for that column.
-    _logicalTypes = List.filled(columnCount, null, growable: false);
+    // Initialize _logicalTypes with fixed size
+    _logicalTypes =
+        List<LogicalType?>.filled(columnCount, null, growable: false);
   }
 
   factory ResultSetImpl.withResult(Pointer<duckdb_result> result) {
@@ -99,18 +99,13 @@ class ResultSetImpl extends ResultSet {
   }
 
   /// Use a generator to mimic a row cursor.
-  late final Iterator<List> _cursor = (() sync* {
-    final columns = <Column>[];
+  late final Iterator<List<Object?>> _cursor = (() sync* {
     for (var rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-      final row = [];
-      for (var columnIndex = 0; columnIndex < columnCount; columnIndex++) {
-        // While iterating on the first row in the results, add the columns so
-        // we can quickly access them through the rest of the query.
-        if (rowIndex == 0) {
-          columns.add(this[columnIndex]);
-        }
-        row.add(columns[columnIndex][rowIndex]);
-      }
+      final row = List<Object?>.generate(
+        columnCount,
+        (columnIndex) => this[columnIndex][rowIndex],
+        growable: false,
+      );
       yield row;
     }
   })()
@@ -119,18 +114,64 @@ class ResultSetImpl extends ResultSet {
   /// Fetch the next row of a query result set, returning a single sequence,
   /// or null when no more data is available.
   @override
-  List? fetchOne() => _cursor.moveNext() ? _cursor.current : null;
+  List<Object?>? fetchOne() => _cursor.moveNext() ? _cursor.current : null;
 
-  /// Fetch all (remaining) rows of a query result, returning them
-  /// as a sequence of sequences (e.g. a list of lists). Return an
-  /// empty list when no more data is available.
   @override
-  List<List> fetchAll() {
-    final remaining = <List>[];
-    while (_cursor.moveNext()) {
-      remaining.add(_cursor.current);
+  List<List<Object?>> fetchAll({int? batchSize}) {
+    final rows = <List<Object?>>[];
+
+    // Use DuckDB's vector size as default batch size for optimal performance
+    final chunkSize = batchSize ?? vectorSize;
+
+    // Pre-fetch all column accessors
+    final columns = List.generate(
+      columnCount,
+      (columnIndex) => this[columnIndex],
+      growable: false,
+    );
+
+    // Process in batches
+    for (var offset = 0; offset < rowCount; offset += chunkSize) {
+      final currentBatchSize = min(chunkSize, rowCount - offset);
+
+      for (var i = 0; i < currentBatchSize; i++) {
+        final rowIndex = offset + i;
+        final row = List<Object?>.filled(columnCount, null, growable: false);
+        for (var colIndex = 0; colIndex < columnCount; colIndex++) {
+          row[colIndex] = columns[colIndex][rowIndex];
+        }
+        rows.add(row);
+      }
     }
-    return remaining;
+
+    return rows;
+  }
+
+  @override
+  Stream<List<Object?>> fetchAllStream({int? batchSize}) async* {
+    // Use DuckDB's vector size as default batch size for optimal performance
+    final chunkSize = batchSize ?? vectorSize;
+
+    // Pre-fetch all column accessors
+    final columns = List.generate(
+      columnCount,
+      (columnIndex) => this[columnIndex],
+      growable: false,
+    );
+
+    // Process in batches
+    for (var offset = 0; offset < rowCount; offset += chunkSize) {
+      final currentBatchSize = min(chunkSize, rowCount - offset);
+
+      for (var i = 0; i < currentBatchSize; i++) {
+        final rowIndex = offset + i;
+        final row = List<Object?>.filled(columnCount, null, growable: false);
+        for (var colIndex = 0; colIndex < columnCount; colIndex++) {
+          row[colIndex] = columns[colIndex][rowIndex];
+        }
+        yield row;
+      }
+    }
   }
 
   @override
@@ -144,53 +185,116 @@ class ResultSetImpl extends ResultSet {
   }
 
   LogicalType _logicalType(int columnIndex) {
-    var type = _logicalTypes[columnIndex];
-    if (type == null) {
-      final logicalType = allocate<duckdb_logical_type>();
-      logicalType.value = Pointer.fromAddress(
-        duckdb.bindings.duckdb_column_logical_type(handle, columnIndex).address,
-      );
-      type = LogicalType.withLogicalType(logicalType);
-      _logicalTypes[columnIndex] = type;
+    final type = _logicalTypes[columnIndex];
+    if (type != null) {
+      return type;
     }
-    return type;
+
+    // Allocate the logical type pointer only if not cached
+    final logicalTypePointer = allocate<duckdb_logical_type>();
+    logicalTypePointer.value = Pointer.fromAddress(
+      duckdb.bindings.duckdb_column_logical_type(handle, columnIndex).address,
+    );
+
+    // Create the LogicalType and cache it
+    return _logicalTypes[columnIndex] =
+        LogicalType.withLogicalType(logicalTypePointer);
+  }
+
+  T? Function(int) transformOrNull<T>(int columnIndex) {
+    return transformer<T?>(columnIndex, (Vector<T?> vector, int elementIndex) {
+      return vector.getValue(elementIndex);
+    });
   }
 
   @override
-  Column operator [](int index) {
+  Column<dynamic> operator [](int index) {
     if (index >= columnCount) {
       throw IndexError.withLength(index, columnCount);
     }
 
-    return ColumnImpl(this, index, transformOrNull(index));
+    return _columnCache[index] ??= switch (columnDataType(index)) {
+      DatabaseType.boolean =>
+        ColumnImpl<bool?>(this, index, transformOrNull<bool>(index)),
+      DatabaseType.tinyInt ||
+      DatabaseType.smallInt ||
+      DatabaseType.integer ||
+      DatabaseType.uTinyInt ||
+      DatabaseType.uSmallInt ||
+      DatabaseType.uInteger ||
+      DatabaseType.bigInt =>
+        ColumnImpl<int?>(this, index, transformOrNull<int>(index)),
+      DatabaseType.uBigInt ||
+      DatabaseType.hugeInt ||
+      DatabaseType.uHugeInt =>
+        ColumnImpl<BigInt?>(this, index, transformOrNull<BigInt>(index)),
+      DatabaseType.float ||
+      DatabaseType.double =>
+        ColumnImpl<double?>(this, index, transformOrNull<double>(index)),
+      DatabaseType.varchar ||
+      DatabaseType.bitString =>
+        ColumnImpl<String?>(this, index, transformOrNull<String>(index)),
+      DatabaseType.timestamp ||
+      DatabaseType.timestampS ||
+      DatabaseType.timestampMS ||
+      DatabaseType.timestampNS ||
+      DatabaseType.timestampTz =>
+        ColumnImpl<DateTime?>(this, index, transformOrNull<DateTime>(index)),
+      DatabaseType.date =>
+        ColumnImpl<Date?>(this, index, transformOrNull<Date>(index)),
+      DatabaseType.time =>
+        ColumnImpl<Time?>(this, index, transformOrNull<Time>(index)),
+      DatabaseType.timeTz => ColumnImpl<TimeWithOffset?>(
+          this,
+          index,
+          transformOrNull<TimeWithOffset>(index),
+        ),
+      DatabaseType.interval =>
+        ColumnImpl<Interval?>(this, index, transformOrNull<Interval>(index)),
+      DatabaseType.blob =>
+        ColumnImpl<Uint8List?>(this, index, transformOrNull<Uint8List>(index)),
+      DatabaseType.uuid =>
+        ColumnImpl<UuidValue?>(this, index, transformOrNull<UuidValue>(index)),
+      DatabaseType.list => ColumnImpl<List<Object?>?>(
+          this,
+          index,
+          transformOrNull<List<Object?>>(index),
+        ),
+      DatabaseType.structure => ColumnImpl<Map<String, Object?>?>(
+          this,
+          index,
+          transformOrNull<Map<String, Object?>>(index),
+        ),
+      DatabaseType.map => ColumnImpl<Map<Object, Object?>?>(
+          this,
+          index,
+          transformOrNull<Map<Object, Object?>>(index),
+        ),
+      DatabaseType.decimal =>
+        ColumnImpl<Decimal?>(this, index, transformOrNull<Decimal>(index)),
+      DatabaseType.enumeration => ColumnImpl<String?>(
+          this,
+          index,
+          transformOrNull<String>(index),
+        ),
+      DatabaseType.array => ColumnImpl<List<Object?>?>(
+          this,
+          index,
+          transformOrNull<List<Object?>>(index),
+        ),
+      _ => ColumnImpl<Object?>(this, index, transformOrNull<Object>(index))
+    };
   }
-}
 
-extension Transformer on ResultSetImpl {
-  Function(int) transformOrNull(int columnIndex) {
-    return transformer(columnIndex, (Vector vector, int elementIndex) {
-      if (vector.unwrapNull(elementIndex)) {
-        return null;
-      }
-
-      return vector.unwrap(elementIndex);
-    });
-  }
-}
-
-extension DataExtraction on ResultSetImpl {
   int get vectorSize => duckdb.bindings.duckdb_vector_size();
 
-  /// Used to cache chunks for responses.
   DataChunkImpl dataChunkByIndex(int chunkIndex) {
-    // toss out the current chunk if requesting a different chunk.
     if (_currentChunkIndex != chunkIndex) {
       _currentChunk?.dispose();
       _currentChunk = null;
       _currentChunkIndex = -1;
     }
 
-    // Check if the current chunk contains the itemIndex
     if (_currentChunk == null) {
       _currentChunk = DataChunkImpl.withResult(this, chunkIndex);
       _currentChunkIndex = chunkIndex;
@@ -199,42 +303,90 @@ extension DataExtraction on ResultSetImpl {
     return _currentChunk!;
   }
 
-  dynamic Function(int) transformer(
+  TItem? Function(int) transformer<TItem>(
     int columnIndex,
-    Function(Vector, int) body,
+    Function(Vector<TItem>, int) body,
   ) {
     return (int itemIndex) {
-      /// Index of the current data chunk being processed.
-      final closestSmallerOffset = _chunkSizesMap.lastKeyBefore(itemIndex);
-      var chunkIndex = closestSmallerOffset != null
-          ? _chunkSizesMap[closestSmallerOffset]!
+      final closestSmallerOffsetIndex = _findClosestSmallerOffset(itemIndex);
+      var chunkIndex = closestSmallerOffsetIndex != -1
+          ? _chunkOffsetToChunkIndex[_chunkOffsets[closestSmallerOffsetIndex]]!
           : 0;
 
-      /// Accumulated row count from previously processed chunks.
-      var chunkRowOffset = closestSmallerOffset ?? 0;
+      var chunkRowOffset = closestSmallerOffsetIndex != -1
+          ? _chunkOffsets[closestSmallerOffsetIndex]
+          : 0;
 
       while (chunkIndex < chunkCount) {
         final chunk = dataChunkByIndex(chunkIndex);
         final chunkSize = chunk.count;
 
         if (itemIndex < chunkRowOffset + chunkSize) {
-          return chunk.vectorAtIndex(
+          return chunk.vectorAtIndex<TItem>(
             columnIndex,
             (vector) => body(vector, itemIndex - chunkRowOffset),
-            logicalType: _logicalType(columnIndex),
+            _logicalType(columnIndex),
           );
         } else {
           chunkIndex++;
           chunkRowOffset += chunkSize;
 
-          /// Cache the known chunk sizes and indices as we learn them
-          if (!_chunkSizesMap.containsKey(chunkRowOffset)) {
-            _chunkSizesMap[chunkRowOffset] = chunkIndex;
+          if (!_chunkOffsetToChunkIndex.containsKey(chunkRowOffset)) {
+            _chunkOffsets.add(chunkRowOffset);
+            _chunkOffsetToChunkIndex[chunkRowOffset] = chunkIndex;
           }
         }
       }
 
-      throw StateError("requested item out of bounds");
+      throw RangeError.range(
+        itemIndex,
+        0,
+        chunkCount - 1,
+        'index',
+        'Index out of bounds',
+      );
     };
+  }
+
+  var _lastFoundOffset = 0;
+  int _findClosestSmallerOffset(int itemIndex) {
+    // Early exit for common cases
+    if (_chunkOffsets.isEmpty) return -1;
+    if (itemIndex < _chunkOffsets[0]) return -1;
+    if (itemIndex >= _chunkOffsets.last) return _chunkOffsets.length - 1;
+
+    // Try last successful position first
+    if (_lastFoundOffset < _chunkOffsets.length &&
+        _chunkOffsets[_lastFoundOffset] <= itemIndex &&
+        (_lastFoundOffset + 1 == _chunkOffsets.length ||
+            _chunkOffsets[_lastFoundOffset + 1] > itemIndex)) {
+      return _lastFoundOffset;
+    }
+
+    // Galloping search: Instead of checking every element or
+    // doing a standard binary search, we first try to find the range where our value
+    // might be by checking positions that grow exponentially (1, 2, 4, 8, 16...).
+    // This is especially efficient for sequential access patterns as it quickly
+    // finds the right neighborhood before switching to binary search.
+    var i = 1;
+    while (i < _chunkOffsets.length && _chunkOffsets[i] <= itemIndex) {
+      i = i << 1;
+    }
+
+    // Binary search in the identified range
+    var low = i >> 1;
+    var high = min(i, _chunkOffsets.length - 1);
+
+    while (low < high) {
+      final mid = (low + high + 1) >>> 1;
+      if (_chunkOffsets[mid] <= itemIndex) {
+        low = mid;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    _lastFoundOffset = low;
+    return low;
   }
 }

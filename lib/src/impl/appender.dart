@@ -110,6 +110,23 @@ class AppenderImpl extends Appender {
       time.ref.micros = value.toMicrosecondsSinceEpoch();
       status = _bindings.duckdb_append_time(appender, time.ref);
       time.free();
+    } else if (value is Uint8List) {
+      // Copy the data into native memory
+      final nativeBlob = calloc<Uint8>(value.length);
+      final nativeBlobList = nativeBlob.asTypedList(value.length);
+      nativeBlobList.setAll(0, value);
+
+      // Cast to Pointer<Void> to match the expected parameter type
+      final dataPtr = nativeBlob.cast<Void>();
+
+      // Call the native function
+      status = _bindings.duckdb_append_blob(
+        appender,
+        dataPtr,
+        value.length,
+      );
+
+      calloc.free(nativeBlob);
     } else {
       throw UnimplementedError(
         'Type ${value.runtimeType} not supported by appender',

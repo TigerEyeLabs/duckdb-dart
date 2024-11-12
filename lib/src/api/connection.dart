@@ -28,6 +28,9 @@ abstract class Connection {
   /// ordered as they are defined in the table's schema.
   Iterable<String> getColumnOrder(String table);
 
+  /// Interrupt running query
+  void interrupt();
+
   /// Closes this database and releases associated resources.
   void dispose();
 }

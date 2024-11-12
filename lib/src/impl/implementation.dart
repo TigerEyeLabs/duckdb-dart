@@ -1,17 +1,23 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:core';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:async/async.dart';
 import 'package:collection/collection.dart';
 import 'package:dart_duckdb/dart_duckdb.dart';
 import 'package:dart_duckdb/src/api/column.dart';
 import 'package:dart_duckdb/src/ffi/ffi.dart';
 import 'package:dart_duckdb/src/impl/finalizer.dart';
 import 'package:dart_duckdb/src/impl/utils.dart';
+import 'package:dart_duckdb/src/impl/value/value_factory.dart';
+import 'package:dart_duckdb/src/impl/vector/transformer_registry.dart';
 import 'package:dart_duckdb/src/types/time.dart';
+import 'package:dart_duckdb/src/types/time_with_offset.dart';
 import 'package:ffi/ffi.dart';
-import 'package:uuid/uuid.dart';
+import 'package:uuid/uuid_value.dart';
 
 part 'appender.dart';
 part 'column.dart';
@@ -19,6 +25,8 @@ part 'connection.dart';
 part 'data_chunk.dart';
 part 'database.dart';
 part 'logical_type.dart';
+part 'pending_result.dart';
 part 'prepared_statement.dart';
 part 'result_set.dart';
+part 'value.dart';
 part 'vector.dart';

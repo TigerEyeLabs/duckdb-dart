@@ -1,6 +1,5 @@
 import 'dart:ffi';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:dart_duckdb/src/ffi/ffi.dart';
 import 'package:meta/meta.dart';
@@ -17,22 +16,7 @@ final OpenDynamicLibrary open = OpenDynamicLibrary._();
 
 DynamicLibrary _defaultOpen() {
   if (Platform.isAndroid) {
-    try {
-      return DynamicLibrary.open('libduckdb.so');
-      // ignore: avoid_catching_errors
-    } on ArgumentError {
-      // On some (especially old) Android devices, we somehow can't dlopen
-      // libraries shipped with the apk. We need to find the full path of the
-      // library (/data/data/<id>/lib/libduckdb.so) and open that one.
-      // For details, see https://github.com/simolus3/moor/issues/420
-      final appIdAsBytes = File('/proc/self/cmdline').readAsBytesSync();
-
-      // app id ends with the first \0 character in here.
-      final endOfAppId = max(appIdAsBytes.indexOf(0), 0);
-      final appId = String.fromCharCodes(appIdAsBytes.sublist(0, endOfAppId));
-
-      return DynamicLibrary.open('/data/data/$appId/lib/libduckdb.so');
-    }
+    return DynamicLibrary.open('libduckdb.so');
   } else if (Platform.isIOS) {
     return DynamicLibrary.open('duckdb.framework/duckdb');
   } else if (Platform.isMacOS) {
@@ -111,16 +95,24 @@ class OpenDynamicLibrary {
     }
 
     if (isTestEnvironment()) {
-      final prefix = '${Directory.current.path}/../duckdb.dart';
+      final prefix = '${Directory.current.path}/../duckdb';
 
       if (_overriddenPlatforms[OperatingSystem.windows] == null) {
-        _overriddenPlatforms[OperatingSystem.windows] = () =>
-            DynamicLibrary.open('$prefix/windows/Libraries/release/duckdb.dll');
+        _overriddenPlatforms[OperatingSystem.windows] =
+            () => DynamicLibrary.open(
+                  '$prefix/windows/Libraries/release/duckdb.dll',
+                );
       }
 
       if (_overriddenPlatforms[OperatingSystem.macOS] == null) {
         _overriddenPlatforms[OperatingSystem.macOS] = () => DynamicLibrary.open(
               '$prefix/macos/Libraries/release/libduckdb.dylib',
+            );
+      }
+
+      if (_overriddenPlatforms[OperatingSystem.linux] == null) {
+        _overriddenPlatforms[OperatingSystem.linux] = () => DynamicLibrary.open(
+              '$prefix/linux/Libraries/release/libduckdb.so',
             );
       }
     }

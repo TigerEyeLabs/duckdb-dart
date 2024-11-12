@@ -8,11 +8,13 @@ part of 'implementation.dart';
 class _FinalizableDataChunk extends FinalizablePart {
   final Bindings _bindings;
   final Pointer<duckdb_data_chunk> _handle;
+  final Map<int, Vector> vectorCache = {};
 
   _FinalizableDataChunk(this._bindings, this._handle);
 
   @override
   void dispose() {
+    // vectorCache.clear();
     _bindings.duckdb_destroy_data_chunk(_handle);
     _handle.free();
   }
@@ -52,19 +54,37 @@ class DataChunkImpl {
     return DataChunkImpl._(bindings, dataChunk);
   }
 
-  dynamic vectorAtIndex(
-    int columnIndex,
-    Function(Vector) body, {
-    LogicalType? logicalType,
-  }) {
-    return body(
-      Vector(
-        _bindings,
-        _bindings.duckdb_data_chunk_get_vector(handle.value, columnIndex),
-        count,
-        logicalType: logicalType,
-      ),
+  /// Sets the data chunk to the specified index in the result set.
+  void setIndex(ResultSet result, int index) {
+    // Update the handle to point to the new chunk
+    _bindings.duckdb_destroy_data_chunk(_finalizable._handle);
+    _finalizable._handle.value = Pointer.fromAddress(
+      duckdb.bindings
+          .duckdb_result_get_chunk(
+            (result.handle as Pointer<duckdb_result>)[0],
+            index,
+          )
+          .address,
     );
+  }
+
+  T? vectorAtIndex<T>(
+    int columnIndex,
+    T Function(Vector<T>) body,
+    LogicalType logicalType,
+  ) {
+    final chunk = handle.value;
+    final vector = _finalizable.vectorCache.putIfAbsent(
+      columnIndex,
+      () => Vector<T>(
+        _bindings,
+        _bindings.duckdb_data_chunk_get_vector(chunk, columnIndex),
+        count,
+        logicalType,
+      ),
+    ) as Vector<T>;
+
+    return body(vector);
   }
 
   /// The number of tuples in the chunk

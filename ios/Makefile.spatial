@@ -1,0 +1,64 @@
+## Variables
+VERSION = v1.1.3
+DUCKDB_REPO = https://github.com/duckdb/duckdb
+DUCKDB_DIR = ./duckdb
+BUILD_DIR = $(DUCKDB_DIR)/build
+EXTENSION_DIR = $(DUCKDB_DIR)/extension
+LIB_DIR = ./Libraries/release
+EXTENSION_DIR = $(DUCKDB_DIR)/extension
+EXTENSIONS = 'icu;parquet;json;fts;autocomplete'
+
+ifndef VCPKG_TOOLCHAIN_PATH
+$(error VCPKG_TOOLCHAIN_PATH is not set)
+endif
+
+# Check if Ninja is available
+NINJA := $(shell command -v ninja 2> /dev/null)
+CMAKE_GENERATOR := $(if $(NINJA),-G "Ninja",)
+
+# common environment variables
+export CMAKE_TOOLCHAIN_FILE=$(PWD)/ios.toolchain.spatial.cmake
+export BUILD_SHELL=0
+
+.PHONY: all reset clean duckdb simulator device release help
+
+all: reset release ## Full Build
+
+reset: ## Reset build environment
+	rm -rf $(LIB_DIR) $(DUCKDB_DIR)
+
+clean: ## Clean duckdb build
+	make -C $(DUCKDB_DIR) clean
+
+duckdb: ## Clone DuckDb repo and apply patch
+	git clone --depth 1 --branch "$(VERSION)" https://github.com/duckdb/duckdb $(DUCKDB_DIR)
+	git -C $(DUCKDB_DIR) apply ../changes.patch
+	cp extension_config_local.cmake $(EXTENSION_DIR)
+
+build_%: duckdb ## Build for specific architecture
+	@mkdir -p $(LIB_DIR)
+	@export OSX_BUILD_ARCH=$(if $(findstring x86_64,$*),x86_64,arm64); \
+	export IOS_PLATFORM=$(if $(findstring simulator,$*),iPhoneSimulator,iPhoneOS); \
+	export DUCKDB_PLATFORM=$(if $(findstring x86_64,$*),osx_amd64,osx_arm64); \
+	export DUCKDB_EXTENSIONS=$(EXTENSIONS); \
+	export VCPKG_TARGET_TRIPLET=$(if $(findstring x86_64,$*),x64-ios,$(if $(and $(findstring arm64,$*),$(findstring simulator,$*)),arm64-ios-simulator,arm64-ios)); \
+	make -C $(DUCKDB_DIR) DUCKDB_EXTENSIONS=$$DUCKDB_EXTENSIONS DUCKDB_PLATFORM=$$DUCKDB_PLATFORM OSX_BUILD_ARCH=$$OSX_BUILD_ARCH IOS_PLATFORM=$$IOS_PLATFORM GEN=ninja extension_configuration; \
+	make -C $(DUCKDB_DIR) DUCKDB_EXTENSIONS=$$DUCKDB_EXTENSIONS DUCKDB_PLATFORM=$$DUCKDB_PLATFORM OSX_BUILD_ARCH=$$OSX_BUILD_ARCH IOS_PLATFORM=$$IOS_PLATFORM USE_MERGED_VCPKG_MANIFEST=1 VCPKG_TOOLCHAIN_PATH=$$VCPKG_TOOLCHAIN_PATH VCPKG_TARGET_TRIPLET=$$VCPKG_TARGET_TRIPLET GEN=ninja release; \
+	cp $(DUCKDB_DIR)/src/include/duckdb.h $(DUCKDB_DIR)/build/release/src/duckdb.framework/Headers; \
+	mv $(DUCKDB_DIR)/build/release/src/duckdb.framework $(LIB_DIR)/duckdb_$*.framework
+
+simulator: build_x86_64_simulator clean build_arm64_simulator ## Universal iOS Simulator Build
+	mv $(LIB_DIR)/duckdb_arm64_simulator.framework $(LIB_DIR)/duckdb.framework.sim
+	lipo -create $(LIB_DIR)/duckdb.framework.sim/duckdb $(LIB_DIR)/duckdb_x86_64_simulator.framework/duckdb -output $(LIB_DIR)/duckdb.framework.sim/duckdb
+	rm -rf $(LIB_DIR)/duckdb_x86_64_simulator.framework
+	@echo "Universal Simulator Build Complete"
+
+device: build_arm64_device ## iOS Hardware Build
+	mv $(LIB_DIR)/duckdb_arm64_device.framework $(LIB_DIR)/duckdb.framework
+	@echo "iOS Device Build Complete"
+
+release: device ## Build for device
+	@echo "Release build complete"
+
+help: ## Display this help message
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

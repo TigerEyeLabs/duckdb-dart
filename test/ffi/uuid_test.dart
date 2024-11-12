@@ -20,7 +20,7 @@ void main() {
     const uuidString = '79700043-11eb-1101-80d6-510900000d10';
     final results = connection.query("SELECT '$uuidString'::UUID;").fetchAll();
 
-    final uuid = results[0][0] as UuidValue;
+    final uuid = results[0][0]! as UuidValue;
     expect(uuid, UuidValue.fromString(uuidString));
   });
 }

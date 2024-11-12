@@ -1,0 +1,67 @@
+## Variables
+VERSION = v1.1.3
+DUCKDB_REPO = https://github.com/duckdb/duckdb
+DUCKDB_DIR = duckdb
+BUILD_DIR = $(DUCKDB_DIR)/build
+EXTENSION_DIR = $(DUCKDB_DIR)/extension
+PATCHES_DIR = $(DUCKDB_DIR)/.github/patches/extensions/spatial
+LIB_DIR = Libraries/release
+EXTENSIONS = 'icu;parquet;json;fts;autocomplete'
+VCPKG_TRIPLET = x64-linux
+DUCKDB_PLATFORM = linux_amd64
+
+ifndef VCPKG_TOOLCHAIN_PATH
+# https://github.com/microsoft/vcpkg
+$(error VCPKG_TOOLCHAIN_PATH is not set)
+endif
+
+CMAKE_GENERATOR := -G "Ninja"
+
+# Add these new variables
+ENABLE_EXTENSION_AUTOLOADING = 1
+ENABLE_EXTENSION_AUTOINSTALL = 1
+EXTENSION_STATIC_BUILD = 1
+CMAKE_VARS_BUILD = -DBUILD_UNITTESTS=0 -DBUILD_SHELL=0 -DOVERRIDE_GIT_DESCRIBE=""
+
+.PHONY: all reset release build help
+
+all: reset release ## Full Build
+
+reset: ## Reset build environment
+	rm -rf $(LIB_DIR) $(DUCKDB_DIR)
+
+## Clean duckdb build
+clean:
+	make -C $(DUCKDB_DIR) clean
+
+duckdb: ## Shallow clone DuckDb repo and checkout specific commit
+	git clone --depth 1 --branch "$(VERSION)" https://github.com/duckdb/duckdb $(DUCKDB_DIR)
+	cp extension_config_local.cmake $(EXTENSION_DIR)
+
+build: duckdb ## Build for specific architecture
+	@mkdir -p $(BUILD_DIR)/extension_configuration
+	@cd $(BUILD_DIR)/extension_configuration && \
+		cmake $(CMAKE_GENERATOR) -DEXTENSION_CONFIG_BUILD=TRUE -DCMAKE_BUILD_TYPE=Release ../.. && \
+		cmake --build . --config Release --parallel
+	@cd $(BUILD_DIR) && cmake $(CMAKE_GENERATOR) \
+		-DDISABLE_UNITY=1 \
+		-DSPATIAL_USE_NETWORK=OFF \
+		-DVCPKG_MANIFEST_DIR='extension_configuration' \
+		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
+		-DDUCKDB_EXPLICIT_PLATFORM=$(DUCKDB_PLATFORM) \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DBUILD_EXTENSIONS=$(EXTENSIONS) \
+		-DENABLE_EXTENSION_AUTOLOADING=$(ENABLE_EXTENSION_AUTOLOADING) \
+		-DENABLE_EXTENSION_AUTOINSTALL=$(ENABLE_EXTENSION_AUTOINSTALL) \
+		-DEXTENSION_STATIC_BUILD=$(EXTENSION_STATIC_BUILD) \
+		$(CMAKE_VARS_BUILD) \
+		../
+	@cd $(BUILD_DIR) && cmake --build . --config Release --parallel
+	@mkdir -p $(LIB_DIR)
+	@cp $(BUILD_DIR)/src/libduckdb.so $(LIB_DIR)/libduckdb.so
+
+release: build ## Build for linux
+	echo "Linux Release Build Complete"
+
+help: ## Display this help message
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

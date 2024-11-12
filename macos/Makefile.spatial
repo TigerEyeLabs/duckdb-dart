@@ -1,0 +1,52 @@
+## Variables
+VERSION = v1.1.3
+DUCKDB_REPO = https://github.com/duckdb/duckdb
+DUCKDB_DIR = duckdb
+BUILD_DIR = $(DUCKDB_DIR)/build
+LIB_DIR = Libraries/release
+EXTENSION_DIR = $(DUCKDB_DIR)/extension
+EXTENSIONS = 'icu;parquet;json;fts;autocomplete'
+
+ifndef VCPKG_TOOLCHAIN_PATH
+# https://github.com/microsoft/vcpkg
+$(error VCPKG_TOOLCHAIN_PATH is not set)
+endif
+
+.PHONY: all reset clean release help
+
+all: reset release ## Full Build
+
+reset: ## Reset build environment
+	rm -rf $(LIB_DIR) $(DUCKDB_DIR)
+
+## Clean duckdb build
+clean:
+	make -C $(DUCKDB_DIR) clean
+
+duckdb: ## Shallow clone DuckDb repo and checkout specific commit
+	git clone --depth 1 --branch "$(VERSION)" https://github.com/duckdb/duckdb $(DUCKDB_DIR)
+	cp extension_config_local.cmake $(EXTENSION_DIR)
+
+$(LIB_DIR)/libduckdb_x64.dylib: duckdb ## x64 osx build
+	@mkdir -p $(BUILD_DIR)/extension_configuration
+	@cd $(BUILD_DIR)/extension_configuration && cmake -DEXTENSION_CONFIG_BUILD=TRUE -DCMAKE_BUILD_TYPE=Release ../.. && cmake --build . --config Release
+	@cd $(BUILD_DIR) && cmake -G "Ninja" -DSPATIAL_USE_NETWORK=OFF -DVCPKG_MANIFEST_DIR='extension_configuration' -DCMAKE_TOOLCHAIN_FILE='${VCPKG_TOOLCHAIN_PATH}' -DVCPKG_TARGET_TRIPLET='x64-osx' -DDUCKDB_EXPLICIT_PLATFORM='osx_amd64' -DOSX_BUILD_ARCH=x86_64 -DCMAKE_BUILD_TYPE=Release -DBUILD_EXTENSIONS=$(EXTENSIONS) -DBUILD_SHELL=0 ../
+	@cd $(BUILD_DIR) && cmake --build . --config Release --parallel
+	@mkdir -p $(LIB_DIR)
+	@cp $(BUILD_DIR)/src/libduckdb.dylib $(LIB_DIR)/libduckdb_x64.dylib
+
+$(LIB_DIR)/libduckdb_arm64.dylib: duckdb ## arm64 osx build
+	@mkdir -p $(BUILD_DIR)/extension_configuration
+	@cd $(BUILD_DIR)/extension_configuration && cmake -DEXTENSION_CONFIG_BUILD=TRUE -DCMAKE_BUILD_TYPE=Release ../.. && cmake --build . --config Release
+	@cd $(BUILD_DIR) && cmake -G "Ninja" -DSPATIAL_USE_NETWORK=OFF -DVCPKG_MANIFEST_DIR='extension_configuration' -DCMAKE_TOOLCHAIN_FILE='${VCPKG_TOOLCHAIN_PATH}' -DVCPKG_TARGET_TRIPLET='arm64-osx' -DDUCKDB_EXPLICIT_PLATFORM='osx_arm64' -DOSX_BUILD_ARCH=arm64 -DCMAKE_BUILD_TYPE=Release -DBUILD_EXTENSIONS=$(EXTENSIONS) -DBUILD_SHELL=0 ../
+	@cd $(BUILD_DIR) && cmake --build . --config Release --parallel
+	@mkdir -p $(LIB_DIR)
+	@cp $(BUILD_DIR)/src/libduckdb.dylib $(LIB_DIR)/libduckdb_arm64.dylib
+
+release: $(LIB_DIR)/libduckdb_arm64.dylib clean $(LIB_DIR)/libduckdb_x64.dylib ## Universal osx release build
+	lipo -create $(LIB_DIR)/libduckdb_arm64.dylib $(LIB_DIR)/libduckdb_x64.dylib -output $(LIB_DIR)/libduckdb.dylib
+	rm -rf $(LIB_DIR)/libduckdb_arm64.dylib $(LIB_DIR)/libduckdb_x64.dylib
+	echo "Universal Release Build Complete"
+
+help: ## Display this help message
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

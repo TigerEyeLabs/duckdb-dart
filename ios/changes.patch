@@ -1,9 +1,9 @@
 diff --git a/Makefile b/Makefile
-index 542e17d8dc..3386742bbd 100644
+index 5813bbf5ae..970cd7e422 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -238,9 +238,19 @@ ifdef DEBUG_STACKTRACE
- 	CMAKE_VARS:=${CMAKE_VARS} -DDEBUG_STACKTRACE=1
+@@ -259,9 +259,19 @@ ifneq (${BLOCK_ALLOC_SIZE}, )
+ 	CMAKE_VARS:=${CMAKE_VARS} -DBLOCK_ALLOC_SIZE=${BLOCK_ALLOC_SIZE}
  endif
  
 +ifneq ("${IOS_PLATFORM}", "")
@@ -24,12 +24,12 @@ index 542e17d8dc..3386742bbd 100644
  ifneq ("${VCPKG_TARGET_TRIPLET}", "")
  	CMAKE_VARS_BUILD:=${CMAKE_VARS_BUILD} -DVCPKG_TARGET_TRIPLET='${VCPKG_TARGET_TRIPLET}'
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 06c0c9a096..f1dc1eec2e 100644
+index 3e757a4bcc..0ebd7b4663 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -41,6 +41,45 @@ if(MSVC)
-   add_definitions(/bigobj)
- endif()
+@@ -57,6 +57,45 @@ function(ensure_variable_is_number INPUT_VERSION OUT_RESULT)
+   endif()
+ endfunction()
  
 +string(SUBSTRING ${DUCKDB_VERSION} 1 -1 DUCKDB_VERSION_NO_PREFIX)
 +
@@ -73,7 +73,7 @@ index 06c0c9a096..f1dc1eec2e 100644
  if(AMALGAMATION_BUILD)
  
    add_library(duckdb SHARED "${PROJECT_SOURCE_DIR}/src/amalgamation/duckdb.cpp")
-@@ -104,6 +143,13 @@ else()
+@@ -141,6 +180,13 @@ else()
    link_threads(duckdb_static)
    link_extension_libraries(duckdb_static)
  
@@ -87,7 +87,7 @@ index 06c0c9a096..f1dc1eec2e 100644
    target_include_directories(
      duckdb PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-@@ -112,6 +158,21 @@ else()
+@@ -149,6 +195,21 @@ else()
      duckdb_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
  
@@ -109,7 +109,7 @@ index 06c0c9a096..f1dc1eec2e 100644
    install(
      DIRECTORY "${PROJECT_SOURCE_DIR}/src/include/duckdb"
      DESTINATION "${INSTALL_INCLUDE_DIR}"
-@@ -125,8 +186,10 @@ else()
+@@ -162,8 +223,10 @@ else()
  endif()
  
  install(

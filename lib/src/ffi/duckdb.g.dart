@@ -27,9 +27,9 @@ class Bindings {
   /// If no path is given a new in-memory database is created instead.
   /// The instantiated database should be closed with 'duckdb_close'.
   ///
-  /// path: Path to the database file on disk, or `nullptr` or `:memory:` to open an in-memory database.
-  /// out_database: The result database object.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param path Path to the database file on disk, or `nullptr` or `:memory:` to open an in-memory database.
+  /// @param out_database The result database object.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_open(
     ffi.Pointer<ffi.Char> path,
     ffi.Pointer<duckdb_database> out_database,
@@ -51,12 +51,12 @@ class Bindings {
   /// Extended version of duckdb_open. Creates a new database or opens an existing database file stored at the given path.
   /// The instantiated database should be closed with 'duckdb_close'.
   ///
-  /// path: Path to the database file on disk, or `nullptr` or `:memory:` to open an in-memory database.
-  /// out_database: The result database object.
-  /// config: (Optional) configuration used to start up the database system.
-  /// out_error: If set and the function returns DuckDBError, this will contain the reason why the start-up failed.
+  /// @param path Path to the database file on disk, or `nullptr` or `:memory:` to open an in-memory database.
+  /// @param out_database The result database object.
+  /// @param config (Optional) configuration used to start up the database system.
+  /// @param out_error If set and the function returns DuckDBError, this will contain the reason why the start-up failed.
   /// Note that the error must be freed using `duckdb_free`.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_open_ext(
     ffi.Pointer<ffi.Char> path,
     ffi.Pointer<duckdb_database> out_database,
@@ -88,7 +88,7 @@ class Bindings {
   /// Note that failing to call `duckdb_close` (in case of e.g. a program crash) will not cause data corruption.
   /// Still, it is recommended to always correctly close a database object after you are done with it.
   ///
-  /// database: The database object to shut down.
+  /// @param database The database object to shut down.
   void duckdb_close(
     ffi.Pointer<duckdb_database> database,
   ) {
@@ -108,9 +108,9 @@ class Bindings {
   /// associated with the connection.
   /// The instantiated connection should be closed using 'duckdb_disconnect'.
   ///
-  /// database: The database file to connect to.
-  /// out_connection: The result connection object.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param database The database file to connect to.
+  /// @param out_connection The result connection object.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_connect(
     duckdb_database database,
     ffi.Pointer<duckdb_connection> out_connection,
@@ -131,7 +131,7 @@ class Bindings {
   /// !
   /// Interrupt running query
   ///
-  /// connection: The connection to interrupt
+  /// @param connection The connection to interrupt
   void duckdb_interrupt(
     duckdb_connection connection,
   ) {
@@ -149,8 +149,8 @@ class Bindings {
   /// !
   /// Get progress of the running query
   ///
-  /// connection: The working connection
-  /// returns: -1 if no progress or a percentage of the progress
+  /// @param connection The working connection
+  /// @return -1 if no progress or a percentage of the progress
   duckdb_query_progress_type duckdb_query_progress(
     duckdb_connection connection,
   ) {
@@ -169,7 +169,7 @@ class Bindings {
   /// !
   /// Closes the specified connection and de-allocates all memory allocated for that connection.
   ///
-  /// connection: The connection to close.
+  /// @param connection The connection to close.
   void duckdb_disconnect(
     ffi.Pointer<duckdb_connection> connection,
   ) {
@@ -206,8 +206,11 @@ class Bindings {
   ///
   /// This will always succeed unless there is a malloc failure.
   ///
-  /// out_config: The result configuration object.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// Note that `duckdb_destroy_config` should always be called on the resulting config, even if the function returns
+  /// `DuckDBError`.
+  ///
+  /// @param out_config The result configuration object.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_create_config(
     ffi.Pointer<duckdb_config> out_config,
   ) {
@@ -227,7 +230,7 @@ class Bindings {
   ///
   /// This should not be called in a loop as it internally loops over all the options.
   ///
-  /// returns: The amount of config options available.
+  /// @return The amount of config options available.
   int duckdb_config_count() {
     return _duckdb_config_count();
   }
@@ -243,10 +246,10 @@ class Bindings {
   ///
   /// The result name or description MUST NOT be freed.
   ///
-  /// index: The index of the configuration option (between 0 and `duckdb_config_count`)
-  /// out_name: A name of the configuration flag.
-  /// out_description: A description of the configuration flag.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param index The index of the configuration option (between 0 and `duckdb_config_count`)
+  /// @param out_name A name of the configuration flag.
+  /// @param out_description A description of the configuration flag.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_get_config_flag(
     int index,
     ffi.Pointer<ffi.Pointer<ffi.Char>> out_name,
@@ -275,10 +278,10 @@ class Bindings {
   ///
   /// This can fail if either the name is invalid, or if the value provided for the option is invalid.
   ///
-  /// duckdb_config: The configuration object to set the option on.
-  /// name: The name of the configuration flag to set.
-  /// option: The value to set the configuration flag to.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param config The configuration object to set the option on.
+  /// @param name The name of the configuration flag to set.
+  /// @param option The value to set the configuration flag to.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_set_config(
     duckdb_config config,
     ffi.Pointer<ffi.Char> name,
@@ -302,7 +305,7 @@ class Bindings {
   /// !
   /// Destroys the specified configuration object and de-allocates all memory allocated for the object.
   ///
-  /// config: The configuration object to destroy.
+  /// @param config The configuration object to destroy.
   void duckdb_destroy_config(
     ffi.Pointer<duckdb_config> config,
   ) {
@@ -325,10 +328,10 @@ class Bindings {
   /// Note that after running `duckdb_query`, `duckdb_destroy_result` must be called on the result object even if the
   /// query fails, otherwise the error stored within the result will not be freed correctly.
   ///
-  /// connection: The connection to perform the query in.
-  /// query: The SQL query to run.
-  /// out_result: The query result.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param connection The connection to perform the query in.
+  /// @param query The SQL query to run.
+  /// @param out_result The query result.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_query(
     duckdb_connection connection,
     ffi.Pointer<ffi.Char> query,
@@ -352,7 +355,7 @@ class Bindings {
   /// !
   /// Closes the result and de-allocates all memory allocated for that connection.
   ///
-  /// result: The result to destroy.
+  /// @param result The result to destroy.
   void duckdb_destroy_result(
     ffi.Pointer<duckdb_result> result,
   ) {
@@ -373,9 +376,9 @@ class Bindings {
   ///
   /// Returns `NULL` if the column is out of range.
   ///
-  /// result: The result object to fetch the column name from.
-  /// col: The column index.
-  /// returns: The column name of the specified column.
+  /// @param result The result object to fetch the column name from.
+  /// @param col The column index.
+  /// @return The column name of the specified column.
   ffi.Pointer<ffi.Char> duckdb_column_name(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -398,9 +401,9 @@ class Bindings {
   ///
   /// Returns `DUCKDB_TYPE_INVALID` if the column is out of range.
   ///
-  /// result: The result object to fetch the column type from.
-  /// col: The column index.
-  /// returns: The column type of the specified column.
+  /// @param result The result object to fetch the column type from.
+  /// @param col The column index.
+  /// @return The column type of the specified column.
   int duckdb_column_type(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -421,8 +424,8 @@ class Bindings {
   /// !
   /// Returns the statement type of the statement that was executed
   ///
-  /// result: The result object to fetch the statement type from.
-  /// returns: duckdb_statement_type value or DUCKDB_STATEMENT_TYPE_INVALID
+  /// @param result The result object to fetch the statement type from.
+  /// @return duckdb_statement_type value or DUCKDB_STATEMENT_TYPE_INVALID
   int duckdb_result_statement_type(
     duckdb_result result,
   ) {
@@ -444,9 +447,9 @@ class Bindings {
   ///
   /// Returns `NULL` if the column is out of range.
   ///
-  /// result: The result object to fetch the column type from.
-  /// col: The column index.
-  /// returns: The logical column type of the specified column.
+  /// @param result The result object to fetch the column type from.
+  /// @param col The column index.
+  /// @return The logical column type of the specified column.
   duckdb_logical_type duckdb_column_logical_type(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -468,8 +471,8 @@ class Bindings {
   /// !
   /// Returns the number of columns present in a the result object.
   ///
-  /// result: The result object.
-  /// returns: The number of columns present in the result object.
+  /// @param result The result object.
+  /// @return The number of columns present in the result object.
   int duckdb_column_count(
     ffi.Pointer<duckdb_result> result,
   ) {
@@ -489,8 +492,8 @@ class Bindings {
   ///
   /// Returns the number of rows present in the result object.
   ///
-  /// result: The result object.
-  /// returns: The number of rows present in the result object.
+  /// @param result The result object.
+  /// @return The number of rows present in the result object.
   int duckdb_row_count(
     ffi.Pointer<duckdb_result> result,
   ) {
@@ -509,8 +512,8 @@ class Bindings {
   /// Returns the number of rows changed by the query stored in the result. This is relevant only for INSERT/UPDATE/DELETE
   /// queries. For other queries the rows_changed will be 0.
   ///
-  /// result: The result object.
-  /// returns: The number of rows changed.
+  /// @param result The result object.
+  /// @return The number of rows changed.
   int duckdb_rows_changed(
     ffi.Pointer<duckdb_result> result,
   ) {
@@ -540,9 +543,9 @@ class Bindings {
   /// printf("Data for row %d: %d\n", row, data[row]);
   /// ```
   ///
-  /// result: The result object to fetch the column data from.
-  /// col: The column index.
-  /// returns: The column data of the specified column.
+  /// @param result The result object to fetch the column data from.
+  /// @param col The column index.
+  /// @return The column data of the specified column.
   ffi.Pointer<ffi.Void> duckdb_column_data(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -577,9 +580,9 @@ class Bindings {
   /// }
   /// ```
   ///
-  /// result: The result object to fetch the nullmask from.
-  /// col: The column index.
-  /// returns: The nullmask of the specified column.
+  /// @param result The result object to fetch the nullmask from.
+  /// @param col The column index.
+  /// @return The nullmask of the specified column.
   ffi.Pointer<ffi.Bool> duckdb_nullmask_data(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -602,8 +605,8 @@ class Bindings {
   ///
   /// The result of this function must not be freed. It will be cleaned up when `duckdb_destroy_result` is called.
   ///
-  /// result: The result object to fetch the error from.
-  /// returns: The error of the result.
+  /// @param result The result object to fetch the error from.
+  /// @return The error of the result.
   ffi.Pointer<ffi.Char> duckdb_result_error(
     ffi.Pointer<duckdb_result> result,
   ) {
@@ -620,6 +623,26 @@ class Bindings {
       .asFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<duckdb_result>)>();
 
   /// !
+  /// Returns the result error type contained within the result. The error is only set if `duckdb_query` returns
+  /// `DuckDBError`.
+  ///
+  /// @param result The result object to fetch the error from.
+  /// @return The error type of the result.
+  int duckdb_result_error_type(
+    ffi.Pointer<duckdb_result> result,
+  ) {
+    return _duckdb_result_error_type(
+      result,
+    );
+  }
+
+  late final _duckdb_result_error_typePtr = _lookup<
+          ffi.NativeFunction<ffi.Int32 Function(ffi.Pointer<duckdb_result>)>>(
+      'duckdb_result_error_type');
+  late final _duckdb_result_error_type = _duckdb_result_error_typePtr
+      .asFunction<int Function(ffi.Pointer<duckdb_result>)>();
+
+  /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
   /// Fetches a data chunk from the duckdb_result. This function should be called repeatedly until the result is exhausted.
@@ -634,9 +657,9 @@ class Bindings {
   ///
   /// Use `duckdb_result_chunk_count` to figure out how many chunks there are in the result.
   ///
-  /// result: The result object to fetch the data chunk from.
-  /// chunk_index: The chunk index to fetch from.
-  /// returns: The resulting data chunk. Returns `NULL` if the chunk index is out of bounds.
+  /// @param result The result object to fetch the data chunk from.
+  /// @param chunk_index The chunk index to fetch from.
+  /// @return The resulting data chunk. Returns `NULL` if the chunk index is out of bounds.
   duckdb_data_chunk duckdb_result_get_chunk(
     duckdb_result result,
     int chunk_index,
@@ -658,8 +681,8 @@ class Bindings {
   ///
   /// Checks if the type of the internal result is StreamQueryResult.
   ///
-  /// result: The result object to check.
-  /// returns: Whether or not the result object is of the type StreamQueryResult
+  /// @param result The result object to check.
+  /// @return Whether or not the result object is of the type StreamQueryResult
   bool duckdb_result_is_streaming(
     duckdb_result result,
   ) {
@@ -679,8 +702,8 @@ class Bindings {
   ///
   /// Returns the number of data chunks present in the result.
   ///
-  /// result: The result object
-  /// returns: Number of data chunks present in the result.
+  /// @param result The result object
+  /// @return Number of data chunks present in the result.
   int duckdb_result_chunk_count(
     duckdb_result result,
   ) {
@@ -698,8 +721,8 @@ class Bindings {
   /// !
   /// Returns the return_type of the given result, or DUCKDB_RETURN_TYPE_INVALID on error
   ///
-  /// result: The result object
-  /// returns: The return_type
+  /// @param result The result object
+  /// @return The return_type
   int duckdb_result_return_type(
     duckdb_result result,
   ) {
@@ -717,7 +740,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The boolean value at the specified location, or false if the value cannot be converted.
+  /// @return The boolean value at the specified location, or false if the value cannot be converted.
   bool duckdb_value_boolean(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -740,7 +763,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The int8_t value at the specified location, or 0 if the value cannot be converted.
+  /// @return The int8_t value at the specified location, or 0 if the value cannot be converted.
   int duckdb_value_int8(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -763,7 +786,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The int16_t value at the specified location, or 0 if the value cannot be converted.
+  /// @return The int16_t value at the specified location, or 0 if the value cannot be converted.
   int duckdb_value_int16(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -786,7 +809,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The int32_t value at the specified location, or 0 if the value cannot be converted.
+  /// @return The int32_t value at the specified location, or 0 if the value cannot be converted.
   int duckdb_value_int32(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -809,7 +832,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The int64_t value at the specified location, or 0 if the value cannot be converted.
+  /// @return The int64_t value at the specified location, or 0 if the value cannot be converted.
   int duckdb_value_int64(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -832,7 +855,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The duckdb_hugeint value at the specified location, or 0 if the value cannot be converted.
+  /// @return The duckdb_hugeint value at the specified location, or 0 if the value cannot be converted.
   duckdb_hugeint duckdb_value_hugeint(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -855,7 +878,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The duckdb_uhugeint value at the specified location, or 0 if the value cannot be converted.
+  /// @return The duckdb_uhugeint value at the specified location, or 0 if the value cannot be converted.
   duckdb_uhugeint duckdb_value_uhugeint(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -878,7 +901,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The duckdb_decimal value at the specified location, or 0 if the value cannot be converted.
+  /// @return The duckdb_decimal value at the specified location, or 0 if the value cannot be converted.
   duckdb_decimal duckdb_value_decimal(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -901,7 +924,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The uint8_t value at the specified location, or 0 if the value cannot be converted.
+  /// @return The uint8_t value at the specified location, or 0 if the value cannot be converted.
   int duckdb_value_uint8(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -924,7 +947,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The uint16_t value at the specified location, or 0 if the value cannot be converted.
+  /// @return The uint16_t value at the specified location, or 0 if the value cannot be converted.
   int duckdb_value_uint16(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -947,7 +970,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The uint32_t value at the specified location, or 0 if the value cannot be converted.
+  /// @return The uint32_t value at the specified location, or 0 if the value cannot be converted.
   int duckdb_value_uint32(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -970,7 +993,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The uint64_t value at the specified location, or 0 if the value cannot be converted.
+  /// @return The uint64_t value at the specified location, or 0 if the value cannot be converted.
   int duckdb_value_uint64(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -993,7 +1016,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The float value at the specified location, or 0 if the value cannot be converted.
+  /// @return The float value at the specified location, or 0 if the value cannot be converted.
   double duckdb_value_float(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -1016,7 +1039,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The double value at the specified location, or 0 if the value cannot be converted.
+  /// @return The double value at the specified location, or 0 if the value cannot be converted.
   double duckdb_value_double(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -1039,7 +1062,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The duckdb_date value at the specified location, or 0 if the value cannot be converted.
+  /// @return The duckdb_date value at the specified location, or 0 if the value cannot be converted.
   duckdb_date duckdb_value_date(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -1062,7 +1085,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The duckdb_time value at the specified location, or 0 if the value cannot be converted.
+  /// @return The duckdb_time value at the specified location, or 0 if the value cannot be converted.
   duckdb_time duckdb_value_time(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -1085,7 +1108,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The duckdb_timestamp value at the specified location, or 0 if the value cannot be converted.
+  /// @return The duckdb_timestamp value at the specified location, or 0 if the value cannot be converted.
   duckdb_timestamp duckdb_value_timestamp(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -1108,7 +1131,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The duckdb_interval value at the specified location, or 0 if the value cannot be converted.
+  /// @return The duckdb_interval value at the specified location, or 0 if the value cannot be converted.
   duckdb_interval duckdb_value_interval(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -1129,8 +1152,10 @@ class Bindings {
       duckdb_interval Function(ffi.Pointer<duckdb_result>, int, int)>();
 
   /// !
-  /// DEPRECATED: use duckdb_value_string instead. This function does not work correctly if the string contains null bytes.
-  /// returns: The text value at the specified location as a null-terminated string, or nullptr if the value cannot be
+  /// DEPRECATED**: Use duckdb_value_string instead. This function does not work correctly if the string contains null
+  /// bytes.
+  ///
+  /// @return The text value at the specified location as a null-terminated string, or nullptr if the value cannot be
   /// converted. The result must be freed with `duckdb_free`.
   ffi.Pointer<ffi.Char> duckdb_value_varchar(
     ffi.Pointer<duckdb_result> result,
@@ -1154,9 +1179,10 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The string value at the specified location. Attempts to cast the result value to string.
   /// No support for nested types, and for other complex types.
   /// The resulting field "string.data" must be freed with `duckdb_free.`
+  ///
+  /// @return The string value at the specified location. Attempts to cast the result value to string.
   duckdb_string duckdb_value_string(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -1177,9 +1203,10 @@ class Bindings {
       duckdb_string Function(ffi.Pointer<duckdb_result>, int, int)>();
 
   /// !
-  /// DEPRECATED: use duckdb_value_string_internal instead. This function does not work correctly if the string contains
+  /// DEPRECATED**: Use duckdb_value_string_internal instead. This function does not work correctly if the string contains
   /// null bytes.
-  /// returns: The char* value at the specified location. ONLY works on VARCHAR columns and does not auto-cast.
+  ///
+  /// @return The char* value at the specified location. ONLY works on VARCHAR columns and does not auto-cast.
   /// If the column is NOT a VARCHAR column this function will return NULL.
   ///
   /// The result must NOT be freed.
@@ -1205,9 +1232,9 @@ class Bindings {
               ffi.Pointer<duckdb_result>, int, int)>();
 
   /// !
-  /// DEPRECATED: use duckdb_value_string_internal instead. This function does not work correctly if the string contains
+  /// DEPRECATED**: Use duckdb_value_string_internal instead. This function does not work correctly if the string contains
   /// null bytes.
-  /// returns: The char* value at the specified location. ONLY works on VARCHAR columns and does not auto-cast.
+  /// @return The char* value at the specified location. ONLY works on VARCHAR columns and does not auto-cast.
   /// If the column is NOT a VARCHAR column this function will return NULL.
   ///
   /// The result must NOT be freed.
@@ -1234,7 +1261,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: The duckdb_blob value at the specified location. Returns a blob with blob.data set to nullptr if the
+  /// @return The duckdb_blob value at the specified location. Returns a blob with blob.data set to nullptr if the
   /// value cannot be converted. The resulting field "blob.data" must be freed with `duckdb_free.`
   duckdb_blob duckdb_value_blob(
     ffi.Pointer<duckdb_result> result,
@@ -1258,7 +1285,7 @@ class Bindings {
   /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
-  /// returns: Returns true if the value at the specified index is NULL, and false otherwise.
+  /// @return Returns true if the value at the specified index is NULL, and false otherwise.
   bool duckdb_value_is_null(
     ffi.Pointer<duckdb_result> result,
     int col,
@@ -1282,8 +1309,8 @@ class Bindings {
   /// Allocate `size` bytes of memory using the duckdb internal malloc function. Any memory allocated in this manner
   /// should be freed using `duckdb_free`.
   ///
-  /// size: The number of bytes to allocate.
-  /// returns: A pointer to the allocated memory region.
+  /// @param size The number of bytes to allocate.
+  /// @return A pointer to the allocated memory region.
   ffi.Pointer<ffi.Void> duckdb_malloc(
     int size,
   ) {
@@ -1302,7 +1329,7 @@ class Bindings {
   /// Free a value returned from `duckdb_malloc`, `duckdb_value_varchar`, `duckdb_value_blob`, or
   /// `duckdb_value_string`.
   ///
-  /// ptr: The memory region to de-allocate.
+  /// @param ptr The memory region to de-allocate.
   void duckdb_free(
     ffi.Pointer<ffi.Void> ptr,
   ) {
@@ -1321,7 +1348,7 @@ class Bindings {
   /// The internal vector size used by DuckDB.
   /// This is the amount of tuples that will fit into a data chunk created by `duckdb_create_data_chunk`.
   ///
-  /// returns: The vector size.
+  /// @return The vector size.
   int duckdb_vector_size() {
     return _duckdb_vector_size();
   }
@@ -1349,10 +1376,49 @@ class Bindings {
       _duckdb_string_is_inlinedPtr.asFunction<bool Function(duckdb_string_t)>();
 
   /// !
+  /// Get the string length of a string_t
+  ///
+  /// @param string The string to get the length of.
+  /// @return The length.
+  int duckdb_string_t_length(
+    duckdb_string_t string,
+  ) {
+    return _duckdb_string_t_length(
+      string,
+    );
+  }
+
+  late final _duckdb_string_t_lengthPtr =
+      _lookup<ffi.NativeFunction<ffi.Uint32 Function(duckdb_string_t)>>(
+          'duckdb_string_t_length');
+  late final _duckdb_string_t_length =
+      _duckdb_string_t_lengthPtr.asFunction<int Function(duckdb_string_t)>();
+
+  /// !
+  /// Get a pointer to the string data of a string_t
+  ///
+  /// @param string The string to get the pointer to.
+  /// @return The pointer.
+  ffi.Pointer<ffi.Char> duckdb_string_t_data(
+    ffi.Pointer<duckdb_string_t> string,
+  ) {
+    return _duckdb_string_t_data(
+      string,
+    );
+  }
+
+  late final _duckdb_string_t_dataPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              ffi.Pointer<duckdb_string_t>)>>('duckdb_string_t_data');
+  late final _duckdb_string_t_data = _duckdb_string_t_dataPtr.asFunction<
+      ffi.Pointer<ffi.Char> Function(ffi.Pointer<duckdb_string_t>)>();
+
+  /// !
   /// Decompose a `duckdb_date` object into year, month and date (stored as `duckdb_date_struct`).
   ///
-  /// date: The date object, as obtained from a `DUCKDB_TYPE_DATE` column.
-  /// returns: The `duckdb_date_struct` with the decomposed elements.
+  /// @param date The date object, as obtained from a `DUCKDB_TYPE_DATE` column.
+  /// @return The `duckdb_date_struct` with the decomposed elements.
   duckdb_date_struct duckdb_from_date(
     duckdb_date date,
   ) {
@@ -1370,8 +1436,8 @@ class Bindings {
   /// !
   /// Re-compose a `duckdb_date` from year, month and date (`duckdb_date_struct`).
   ///
-  /// date: The year, month and date stored in a `duckdb_date_struct`.
-  /// returns: The `duckdb_date` element.
+  /// @param date The year, month and date stored in a `duckdb_date_struct`.
+  /// @return The `duckdb_date` element.
   duckdb_date duckdb_to_date(
     duckdb_date_struct date,
   ) {
@@ -1389,8 +1455,8 @@ class Bindings {
   /// !
   /// Test a `duckdb_date` to see if it is a finite value.
   ///
-  /// date: The date object, as obtained from a `DUCKDB_TYPE_DATE` column.
-  /// returns: True if the date is finite, false if it is ±infinity.
+  /// @param date The date object, as obtained from a `DUCKDB_TYPE_DATE` column.
+  /// @return True if the date is finite, false if it is ±infinity.
   bool duckdb_is_finite_date(
     duckdb_date date,
   ) {
@@ -1408,8 +1474,8 @@ class Bindings {
   /// !
   /// Decompose a `duckdb_time` object into hour, minute, second and microsecond (stored as `duckdb_time_struct`).
   ///
-  /// time: The time object, as obtained from a `DUCKDB_TYPE_TIME` column.
-  /// returns: The `duckdb_time_struct` with the decomposed elements.
+  /// @param time The time object, as obtained from a `DUCKDB_TYPE_TIME` column.
+  /// @return The `duckdb_time_struct` with the decomposed elements.
   duckdb_time_struct duckdb_from_time(
     duckdb_time time,
   ) {
@@ -1427,9 +1493,9 @@ class Bindings {
   /// !
   /// Create a `duckdb_time_tz` object from micros and a timezone offset.
   ///
-  /// micros: The microsecond component of the time.
-  /// offset: The timezone offset component of the time.
-  /// returns: The `duckdb_time_tz` element.
+  /// @param micros The microsecond component of the time.
+  /// @param offset The timezone offset component of the time.
+  /// @return The `duckdb_time_tz` element.
   duckdb_time_tz duckdb_create_time_tz(
     int micros,
     int offset,
@@ -1451,9 +1517,7 @@ class Bindings {
   ///
   /// Use `duckdb_from_time` to further decompose the micros into hour, minute, second and microsecond.
   ///
-  /// micros: The time object, as obtained from a `DUCKDB_TYPE_TIME_TZ` column.
-  /// out_micros: The microsecond component of the time.
-  /// out_offset: The timezone offset component of the time.
+  /// @param micros The time object, as obtained from a `DUCKDB_TYPE_TIME_TZ` column.
   duckdb_time_tz_struct duckdb_from_time_tz(
     duckdb_time_tz micros,
   ) {
@@ -1471,8 +1535,8 @@ class Bindings {
   /// !
   /// Re-compose a `duckdb_time` from hour, minute, second and microsecond (`duckdb_time_struct`).
   ///
-  /// time: The hour, minute, second and microsecond in a `duckdb_time_struct`.
-  /// returns: The `duckdb_time` element.
+  /// @param time The hour, minute, second and microsecond in a `duckdb_time_struct`.
+  /// @return The `duckdb_time` element.
   duckdb_time duckdb_to_time(
     duckdb_time_struct time,
   ) {
@@ -1490,8 +1554,8 @@ class Bindings {
   /// !
   /// Decompose a `duckdb_timestamp` object into a `duckdb_timestamp_struct`.
   ///
-  /// ts: The ts object, as obtained from a `DUCKDB_TYPE_TIMESTAMP` column.
-  /// returns: The `duckdb_timestamp_struct` with the decomposed elements.
+  /// @param ts The ts object, as obtained from a `DUCKDB_TYPE_TIMESTAMP` column.
+  /// @return The `duckdb_timestamp_struct` with the decomposed elements.
   duckdb_timestamp_struct duckdb_from_timestamp(
     duckdb_timestamp ts,
   ) {
@@ -1510,8 +1574,8 @@ class Bindings {
   /// !
   /// Re-compose a `duckdb_timestamp` from a duckdb_timestamp_struct.
   ///
-  /// ts: The de-composed elements in a `duckdb_timestamp_struct`.
-  /// returns: The `duckdb_timestamp` element.
+  /// @param ts The de-composed elements in a `duckdb_timestamp_struct`.
+  /// @return The `duckdb_timestamp` element.
   duckdb_timestamp duckdb_to_timestamp(
     duckdb_timestamp_struct ts,
   ) {
@@ -1530,8 +1594,8 @@ class Bindings {
   /// !
   /// Test a `duckdb_timestamp` to see if it is a finite value.
   ///
-  /// ts: The timestamp object, as obtained from a `DUCKDB_TYPE_TIMESTAMP` column.
-  /// returns: True if the timestamp is finite, false if it is ±infinity.
+  /// @param ts The timestamp object, as obtained from a `DUCKDB_TYPE_TIMESTAMP` column.
+  /// @return True if the timestamp is finite, false if it is ±infinity.
   bool duckdb_is_finite_timestamp(
     duckdb_timestamp ts,
   ) {
@@ -1549,8 +1613,8 @@ class Bindings {
   /// !
   /// Converts a duckdb_hugeint object (as obtained from a `DUCKDB_TYPE_HUGEINT` column) into a double.
   ///
-  /// val: The hugeint value.
-  /// returns: The converted `double` element.
+  /// @param val The hugeint value.
+  /// @return The converted `double` element.
   double duckdb_hugeint_to_double(
     duckdb_hugeint val,
   ) {
@@ -1570,8 +1634,8 @@ class Bindings {
   ///
   /// If the conversion fails because the double value is too big the result will be 0.
   ///
-  /// val: The double value.
-  /// returns: The converted `duckdb_hugeint` element.
+  /// @param val The double value.
+  /// @return The converted `duckdb_hugeint` element.
   duckdb_hugeint duckdb_double_to_hugeint(
     double val,
   ) {
@@ -1589,8 +1653,8 @@ class Bindings {
   /// !
   /// Converts a duckdb_uhugeint object (as obtained from a `DUCKDB_TYPE_UHUGEINT` column) into a double.
   ///
-  /// val: The uhugeint value.
-  /// returns: The converted `double` element.
+  /// @param val The uhugeint value.
+  /// @return The converted `double` element.
   double duckdb_uhugeint_to_double(
     duckdb_uhugeint val,
   ) {
@@ -1610,8 +1674,8 @@ class Bindings {
   ///
   /// If the conversion fails because the double value is too big the result will be 0.
   ///
-  /// val: The double value.
-  /// returns: The converted `duckdb_uhugeint` element.
+  /// @param val The double value.
+  /// @return The converted `duckdb_uhugeint` element.
   duckdb_uhugeint duckdb_double_to_uhugeint(
     double val,
   ) {
@@ -1631,8 +1695,8 @@ class Bindings {
   ///
   /// If the conversion fails because the double value is too big, or the width/scale are invalid the result will be 0.
   ///
-  /// val: The double value.
-  /// returns: The converted `duckdb_decimal` element.
+  /// @param val The double value.
+  /// @return The converted `duckdb_decimal` element.
   duckdb_decimal duckdb_double_to_decimal(
     double val,
     int width,
@@ -1655,8 +1719,8 @@ class Bindings {
   /// !
   /// Converts a duckdb_decimal object (as obtained from a `DUCKDB_TYPE_DECIMAL` column) into a double.
   ///
-  /// val: The decimal value.
-  /// returns: The converted `double` element.
+  /// @param val The decimal value.
+  /// @return The converted `double` element.
   double duckdb_decimal_to_double(
     duckdb_decimal val,
   ) {
@@ -1679,10 +1743,10 @@ class Bindings {
   ///
   /// If the prepare fails, `duckdb_prepare_error` can be called to obtain the reason why the prepare failed.
   ///
-  /// connection: The connection object
-  /// query: The SQL query to prepare
-  /// out_prepared_statement: The resulting prepared statement object
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param connection The connection object
+  /// @param query The SQL query to prepare
+  /// @param out_prepared_statement The resulting prepared statement object
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_prepare(
     duckdb_connection connection,
     ffi.Pointer<ffi.Char> query,
@@ -1706,7 +1770,7 @@ class Bindings {
   /// !
   /// Closes the prepared statement and de-allocates all memory allocated for the statement.
   ///
-  /// prepared_statement: The prepared statement to destroy.
+  /// @param prepared_statement The prepared statement to destroy.
   void duckdb_destroy_prepare(
     ffi.Pointer<duckdb_prepared_statement> prepared_statement,
   ) {
@@ -1728,8 +1792,8 @@ class Bindings {
   ///
   /// The error message should not be freed. It will be de-allocated when `duckdb_destroy_prepare` is called.
   ///
-  /// prepared_statement: The prepared statement to obtain the error from.
-  /// returns: The error message, or `nullptr` if there is none.
+  /// @param prepared_statement The prepared statement to obtain the error from.
+  /// @return The error message, or `nullptr` if there is none.
   ffi.Pointer<ffi.Char> duckdb_prepare_error(
     duckdb_prepared_statement prepared_statement,
   ) {
@@ -1750,7 +1814,7 @@ class Bindings {
   ///
   /// Returns 0 if the query was not successfully prepared.
   ///
-  /// prepared_statement: The prepared statement to obtain the number of parameters for.
+  /// @param prepared_statement The prepared statement to obtain the number of parameters for.
   int duckdb_nparams(
     duckdb_prepared_statement prepared_statement,
   ) {
@@ -1771,7 +1835,7 @@ class Bindings {
   ///
   /// Returns NULL if the index is out of range for the provided prepared statement.
   ///
-  /// prepared_statement: The prepared statement for which to get the parameter name from.
+  /// @param prepared_statement The prepared statement for which to get the parameter name from.
   ffi.Pointer<ffi.Char> duckdb_parameter_name(
     duckdb_prepared_statement prepared_statement,
     int index,
@@ -1794,9 +1858,9 @@ class Bindings {
   ///
   /// Returns `DUCKDB_TYPE_INVALID` if the parameter index is out of range or the statement was not successfully prepared.
   ///
-  /// prepared_statement: The prepared statement.
-  /// param_idx: The parameter index.
-  /// returns: The parameter type
+  /// @param prepared_statement The prepared statement.
+  /// @param param_idx The parameter index.
+  /// @return The parameter type
   int duckdb_param_type(
     duckdb_prepared_statement prepared_statement,
     int param_idx,
@@ -1833,8 +1897,8 @@ class Bindings {
   /// !
   /// Returns the statement type of the statement to be executed
   ///
-  /// statement: The prepared statement.
-  /// returns: duckdb_statement_type value or DUCKDB_STATEMENT_TYPE_INVALID
+  /// @param statement The prepared statement.
+  /// @return duckdb_statement_type value or DUCKDB_STATEMENT_TYPE_INVALID
   int duckdb_prepared_statement_type(
     duckdb_prepared_statement statement,
   ) {
@@ -2252,6 +2316,28 @@ class Bindings {
       int Function(duckdb_prepared_statement, int, duckdb_timestamp)>();
 
   /// !
+  /// Binds a duckdb_timestamp value to the prepared statement at the specified index.
+  int duckdb_bind_timestamp_tz(
+    duckdb_prepared_statement prepared_statement,
+    int param_idx,
+    duckdb_timestamp val,
+  ) {
+    return _duckdb_bind_timestamp_tz(
+      prepared_statement,
+      param_idx,
+      val,
+    );
+  }
+
+  late final _duckdb_bind_timestamp_tzPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int32 Function(duckdb_prepared_statement, idx_t,
+              duckdb_timestamp)>>('duckdb_bind_timestamp_tz');
+  late final _duckdb_bind_timestamp_tz =
+      _duckdb_bind_timestamp_tzPtr.asFunction<
+          int Function(duckdb_prepared_statement, int, duckdb_timestamp)>();
+
+  /// !
   /// Binds a duckdb_interval value to the prepared statement at the specified index.
   int duckdb_bind_interval(
     duckdb_prepared_statement prepared_statement,
@@ -2369,9 +2455,9 @@ class Bindings {
   ///
   /// Note that the result must be freed with `duckdb_destroy_result`.
   ///
-  /// prepared_statement: The prepared statement to execute.
-  /// out_result: The query result.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param prepared_statement The prepared statement to execute.
+  /// @param out_result The query result.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_execute_prepared(
     duckdb_prepared_statement prepared_statement,
     ffi.Pointer<duckdb_result> out_result,
@@ -2400,9 +2486,9 @@ class Bindings {
   ///
   /// Note that the result must be freed with `duckdb_destroy_result`.
   ///
-  /// prepared_statement: The prepared statement to execute.
-  /// out_result: The query result.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param prepared_statement The prepared statement to execute.
+  /// @param out_result The query result.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_execute_prepared_streaming(
     duckdb_prepared_statement prepared_statement,
     ffi.Pointer<duckdb_result> out_result,
@@ -2430,10 +2516,10 @@ class Bindings {
   ///
   /// If the extract fails, `duckdb_extract_statements_error` can be called to obtain the reason why the extract failed.
   ///
-  /// connection: The connection object
-  /// query: The SQL query to extract
-  /// out_extracted_statements: The resulting extracted statements object
-  /// returns: The number of extracted statements or 0 on failure.
+  /// @param connection The connection object
+  /// @param query The SQL query to extract
+  /// @param out_extracted_statements The resulting extracted statements object
+  /// @return The number of extracted statements or 0 on failure.
   int duckdb_extract_statements(
     duckdb_connection connection,
     ffi.Pointer<ffi.Char> query,
@@ -2463,11 +2549,11 @@ class Bindings {
   ///
   /// If the prepare fails, `duckdb_prepare_error` can be called to obtain the reason why the prepare failed.
   ///
-  /// connection: The connection object
-  /// extracted_statements: The extracted statements object
-  /// index: The index of the extracted statement to prepare
-  /// out_prepared_statement: The resulting prepared statement object
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param connection The connection object
+  /// @param extracted_statements The extracted statements object
+  /// @param index The index of the extracted statement to prepare
+  /// @param out_prepared_statement The resulting prepared statement object
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_prepare_extracted_statement(
     duckdb_connection connection,
     duckdb_extracted_statements extracted_statements,
@@ -2496,8 +2582,8 @@ class Bindings {
   /// Returns the error message contained within the extracted statements.
   /// The result of this function must not be freed. It will be cleaned up when `duckdb_destroy_extracted` is called.
   ///
-  /// result: The extracted statements to fetch the error from.
-  /// returns: The error of the extracted statements.
+  /// @param extracted_statements The extracted statements to fetch the error from.
+  /// @return The error of the extracted statements.
   ffi.Pointer<ffi.Char> duckdb_extract_statements_error(
     duckdb_extracted_statements extracted_statements,
   ) {
@@ -2516,7 +2602,7 @@ class Bindings {
 
   /// !
   /// De-allocates all memory allocated for the extracted statements.
-  /// extracted_statements: The extracted statements to destroy.
+  /// @param extracted_statements The extracted statements to destroy.
   void duckdb_destroy_extracted(
     ffi.Pointer<duckdb_extracted_statements> extracted_statements,
   ) {
@@ -2540,9 +2626,9 @@ class Bindings {
   /// Note that after calling `duckdb_pending_prepared`, the pending result should always be destroyed using
   /// `duckdb_destroy_pending`, even if this function returns DuckDBError.
   ///
-  /// prepared_statement: The prepared statement to execute.
-  /// out_result: The pending query result.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param prepared_statement The prepared statement to execute.
+  /// @param out_result The pending query result.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_pending_prepared(
     duckdb_prepared_statement prepared_statement,
     ffi.Pointer<duckdb_pending_result> out_result,
@@ -2571,9 +2657,9 @@ class Bindings {
   /// Note that after calling `duckdb_pending_prepared_streaming`, the pending result should always be destroyed using
   /// `duckdb_destroy_pending`, even if this function returns DuckDBError.
   ///
-  /// prepared_statement: The prepared statement to execute.
-  /// out_result: The pending query result.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param prepared_statement The prepared statement to execute.
+  /// @param out_result The pending query result.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_pending_prepared_streaming(
     duckdb_prepared_statement prepared_statement,
     ffi.Pointer<duckdb_pending_result> out_result,
@@ -2597,7 +2683,7 @@ class Bindings {
   /// !
   /// Closes the pending result and de-allocates all memory allocated for the result.
   ///
-  /// pending_result: The pending result to destroy.
+  /// @param pending_result The pending result to destroy.
   void duckdb_destroy_pending(
     ffi.Pointer<duckdb_pending_result> pending_result,
   ) {
@@ -2618,8 +2704,8 @@ class Bindings {
   ///
   /// The result of this function must not be freed. It will be cleaned up when `duckdb_destroy_pending` is called.
   ///
-  /// result: The pending result to fetch the error from.
-  /// returns: The error of the pending result.
+  /// @param pending_result The pending result to fetch the error from.
+  /// @return The error of the pending result.
   ffi.Pointer<ffi.Char> duckdb_pending_error(
     duckdb_pending_result pending_result,
   ) {
@@ -2644,8 +2730,8 @@ class Bindings {
   ///
   /// The error message can be obtained by calling duckdb_pending_error on the pending_result.
   ///
-  /// pending_result: The pending result to execute a task within.
-  /// returns: The state of the pending result after the execution.
+  /// @param pending_result The pending result to execute a task within.
+  /// @return The state of the pending result after the execution.
   int duckdb_pending_execute_task(
     duckdb_pending_result pending_result,
   ) {
@@ -2667,8 +2753,8 @@ class Bindings {
   ///
   /// The error message can be obtained by calling duckdb_pending_error on the pending_result.
   ///
-  /// pending_result: The pending result.
-  /// returns: The state of the pending result.
+  /// @param pending_result The pending result.
+  /// @return The state of the pending result.
   int duckdb_pending_execute_check_state(
     duckdb_pending_result pending_result,
   ) {
@@ -2692,9 +2778,9 @@ class Bindings {
   ///
   /// Note that the result must be freed with `duckdb_destroy_result`.
   ///
-  /// pending_result: The pending result to execute.
-  /// out_result: The result object.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param pending_result The pending result to execute.
+  /// @param out_result The result object.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_execute_pending(
     duckdb_pending_result pending_result,
     ffi.Pointer<duckdb_result> out_result,
@@ -2716,8 +2802,8 @@ class Bindings {
   /// Returns whether a duckdb_pending_state is finished executing. For example if `pending_state` is
   /// DUCKDB_PENDING_RESULT_READY, this function will return true.
   ///
-  /// pending_state: The pending state on which to decide whether to finish execution.
-  /// returns: Boolean indicating pending execution should be considered finished.
+  /// @param pending_state The pending state on which to decide whether to finish execution.
+  /// @return Boolean indicating pending execution should be considered finished.
   bool duckdb_pending_execution_is_finished(
     int pending_state,
   ) {
@@ -2735,7 +2821,7 @@ class Bindings {
   /// !
   /// Destroys the value and de-allocates all memory allocated for that type.
   ///
-  /// value: The value to destroy.
+  /// @param value The value to destroy.
   void duckdb_destroy_value(
     ffi.Pointer<duckdb_value> value,
   ) {
@@ -2753,8 +2839,8 @@ class Bindings {
   /// !
   /// Creates a value from a null-terminated string
   ///
-  /// value: The null-terminated string
-  /// returns: The value. This must be destroyed with `duckdb_destroy_value`.
+  /// @param text The null-terminated string
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
   duckdb_value duckdb_create_varchar(
     ffi.Pointer<ffi.Char> text,
   ) {
@@ -2772,9 +2858,9 @@ class Bindings {
   /// !
   /// Creates a value from a string
   ///
-  /// value: The text
-  /// length: The length of the text
-  /// returns: The value. This must be destroyed with `duckdb_destroy_value`.
+  /// @param text The text
+  /// @param length The length of the text
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
   duckdb_value duckdb_create_varchar_length(
     ffi.Pointer<ffi.Char> text,
     int length,
@@ -2793,10 +2879,161 @@ class Bindings {
       .asFunction<duckdb_value Function(ffi.Pointer<ffi.Char>, int)>();
 
   /// !
+  /// Creates a value from a boolean
+  ///
+  /// @param input The boolean value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_bool(
+    bool input,
+  ) {
+    return _duckdb_create_bool(
+      input,
+    );
+  }
+
+  late final _duckdb_create_boolPtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(ffi.Bool)>>(
+          'duckdb_create_bool');
+  late final _duckdb_create_bool =
+      _duckdb_create_boolPtr.asFunction<duckdb_value Function(bool)>();
+
+  /// !
+  /// Creates a value from a int8_t (a tinyint)
+  ///
+  /// @param input The tinyint value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_int8(
+    int input,
+  ) {
+    return _duckdb_create_int8(
+      input,
+    );
+  }
+
+  late final _duckdb_create_int8Ptr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(ffi.Int8)>>(
+          'duckdb_create_int8');
+  late final _duckdb_create_int8 =
+      _duckdb_create_int8Ptr.asFunction<duckdb_value Function(int)>();
+
+  /// !
+  /// Creates a value from a uint8_t (a utinyint)
+  ///
+  /// @param input The utinyint value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_uint8(
+    int input,
+  ) {
+    return _duckdb_create_uint8(
+      input,
+    );
+  }
+
+  late final _duckdb_create_uint8Ptr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(ffi.Uint8)>>(
+          'duckdb_create_uint8');
+  late final _duckdb_create_uint8 =
+      _duckdb_create_uint8Ptr.asFunction<duckdb_value Function(int)>();
+
+  /// !
+  /// Creates a value from a int16_t (a smallint)
+  ///
+  /// @param input The smallint value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_int16(
+    int input,
+  ) {
+    return _duckdb_create_int16(
+      input,
+    );
+  }
+
+  late final _duckdb_create_int16Ptr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(ffi.Int16)>>(
+          'duckdb_create_int16');
+  late final _duckdb_create_int16 =
+      _duckdb_create_int16Ptr.asFunction<duckdb_value Function(int)>();
+
+  /// !
+  /// Creates a value from a uint16_t (a usmallint)
+  ///
+  /// @param input The usmallint value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_uint16(
+    int input,
+  ) {
+    return _duckdb_create_uint16(
+      input,
+    );
+  }
+
+  late final _duckdb_create_uint16Ptr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(ffi.Uint16)>>(
+          'duckdb_create_uint16');
+  late final _duckdb_create_uint16 =
+      _duckdb_create_uint16Ptr.asFunction<duckdb_value Function(int)>();
+
+  /// !
+  /// Creates a value from a int32_t (an integer)
+  ///
+  /// @param input The integer value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_int32(
+    int input,
+  ) {
+    return _duckdb_create_int32(
+      input,
+    );
+  }
+
+  late final _duckdb_create_int32Ptr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(ffi.Int32)>>(
+          'duckdb_create_int32');
+  late final _duckdb_create_int32 =
+      _duckdb_create_int32Ptr.asFunction<duckdb_value Function(int)>();
+
+  /// !
+  /// Creates a value from a uint32_t (a uinteger)
+  ///
+  /// @param input The uinteger value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_uint32(
+    int input,
+  ) {
+    return _duckdb_create_uint32(
+      input,
+    );
+  }
+
+  late final _duckdb_create_uint32Ptr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(ffi.Uint32)>>(
+          'duckdb_create_uint32');
+  late final _duckdb_create_uint32 =
+      _duckdb_create_uint32Ptr.asFunction<duckdb_value Function(int)>();
+
+  /// !
+  /// Creates a value from a uint64_t (a ubigint)
+  ///
+  /// @param input The ubigint value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_uint64(
+    int input,
+  ) {
+    return _duckdb_create_uint64(
+      input,
+    );
+  }
+
+  late final _duckdb_create_uint64Ptr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(ffi.Uint64)>>(
+          'duckdb_create_uint64');
+  late final _duckdb_create_uint64 =
+      _duckdb_create_uint64Ptr.asFunction<duckdb_value Function(int)>();
+
+  /// !
   /// Creates a value from an int64
   ///
-  /// value: The bigint value
-  /// returns: The value. This must be destroyed with `duckdb_destroy_value`.
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
   duckdb_value duckdb_create_int64(
     int val,
   ) {
@@ -2812,11 +3049,607 @@ class Bindings {
       _duckdb_create_int64Ptr.asFunction<duckdb_value Function(int)>();
 
   /// !
-  /// Creates a struct value from a type and an array of values
+  /// Creates a value from a hugeint
   ///
-  /// type: The type of the struct
-  /// values: The values for the struct fields
-  /// returns: The value. This must be destroyed with `duckdb_destroy_value`.
+  /// @param input The hugeint value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_hugeint(
+    duckdb_hugeint input,
+  ) {
+    return _duckdb_create_hugeint(
+      input,
+    );
+  }
+
+  late final _duckdb_create_hugeintPtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(duckdb_hugeint)>>(
+          'duckdb_create_hugeint');
+  late final _duckdb_create_hugeint = _duckdb_create_hugeintPtr
+      .asFunction<duckdb_value Function(duckdb_hugeint)>();
+
+  /// !
+  /// Creates a value from a uhugeint
+  ///
+  /// @param input The uhugeint value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_uhugeint(
+    duckdb_uhugeint input,
+  ) {
+    return _duckdb_create_uhugeint(
+      input,
+    );
+  }
+
+  late final _duckdb_create_uhugeintPtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(duckdb_uhugeint)>>(
+          'duckdb_create_uhugeint');
+  late final _duckdb_create_uhugeint = _duckdb_create_uhugeintPtr
+      .asFunction<duckdb_value Function(duckdb_uhugeint)>();
+
+  /// !
+  /// Creates a value from a float
+  ///
+  /// @param input The float value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_float(
+    double input,
+  ) {
+    return _duckdb_create_float(
+      input,
+    );
+  }
+
+  late final _duckdb_create_floatPtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(ffi.Float)>>(
+          'duckdb_create_float');
+  late final _duckdb_create_float =
+      _duckdb_create_floatPtr.asFunction<duckdb_value Function(double)>();
+
+  /// !
+  /// Creates a value from a double
+  ///
+  /// @param input The double value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_double(
+    double input,
+  ) {
+    return _duckdb_create_double(
+      input,
+    );
+  }
+
+  late final _duckdb_create_doublePtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(ffi.Double)>>(
+          'duckdb_create_double');
+  late final _duckdb_create_double =
+      _duckdb_create_doublePtr.asFunction<duckdb_value Function(double)>();
+
+  /// !
+  /// Creates a value from a date
+  ///
+  /// @param input The date value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_date(
+    duckdb_date input,
+  ) {
+    return _duckdb_create_date(
+      input,
+    );
+  }
+
+  late final _duckdb_create_datePtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(duckdb_date)>>(
+          'duckdb_create_date');
+  late final _duckdb_create_date =
+      _duckdb_create_datePtr.asFunction<duckdb_value Function(duckdb_date)>();
+
+  /// !
+  /// Creates a value from a time
+  ///
+  /// @param input The time value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_time(
+    duckdb_time input,
+  ) {
+    return _duckdb_create_time(
+      input,
+    );
+  }
+
+  late final _duckdb_create_timePtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(duckdb_time)>>(
+          'duckdb_create_time');
+  late final _duckdb_create_time =
+      _duckdb_create_timePtr.asFunction<duckdb_value Function(duckdb_time)>();
+
+  /// !
+  /// Creates a value from a time_tz.
+  /// Not to be confused with `duckdb_create_time_tz`, which creates a duckdb_time_tz_t.
+  ///
+  /// @param value The time_tz value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_time_tz_value(
+    duckdb_time_tz value,
+  ) {
+    return _duckdb_create_time_tz_value(
+      value,
+    );
+  }
+
+  late final _duckdb_create_time_tz_valuePtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(duckdb_time_tz)>>(
+          'duckdb_create_time_tz_value');
+  late final _duckdb_create_time_tz_value = _duckdb_create_time_tz_valuePtr
+      .asFunction<duckdb_value Function(duckdb_time_tz)>();
+
+  /// !
+  /// Creates a value from a timestamp
+  ///
+  /// @param input The timestamp value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_timestamp(
+    duckdb_timestamp input,
+  ) {
+    return _duckdb_create_timestamp(
+      input,
+    );
+  }
+
+  late final _duckdb_create_timestampPtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(duckdb_timestamp)>>(
+          'duckdb_create_timestamp');
+  late final _duckdb_create_timestamp = _duckdb_create_timestampPtr
+      .asFunction<duckdb_value Function(duckdb_timestamp)>();
+
+  /// !
+  /// Creates a value from an interval
+  ///
+  /// @param input The interval value
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_interval(
+    duckdb_interval input,
+  ) {
+    return _duckdb_create_interval(
+      input,
+    );
+  }
+
+  late final _duckdb_create_intervalPtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(duckdb_interval)>>(
+          'duckdb_create_interval');
+  late final _duckdb_create_interval = _duckdb_create_intervalPtr
+      .asFunction<duckdb_value Function(duckdb_interval)>();
+
+  /// !
+  /// Creates a value from a blob
+  ///
+  /// @param data The blob data
+  /// @param length The length of the blob data
+  /// @return The value. This must be destroyed with `duckdb_destroy_value`.
+  duckdb_value duckdb_create_blob(
+    ffi.Pointer<ffi.Uint8> data,
+    int length,
+  ) {
+    return _duckdb_create_blob(
+      data,
+      length,
+    );
+  }
+
+  late final _duckdb_create_blobPtr = _lookup<
+      ffi.NativeFunction<
+          duckdb_value Function(
+              ffi.Pointer<ffi.Uint8>, idx_t)>>('duckdb_create_blob');
+  late final _duckdb_create_blob = _duckdb_create_blobPtr
+      .asFunction<duckdb_value Function(ffi.Pointer<ffi.Uint8>, int)>();
+
+  /// !
+  /// Returns the boolean value of the given value.
+  ///
+  /// @param val A duckdb_value containing a boolean
+  /// @return A boolean, or false if the value cannot be converted
+  bool duckdb_get_bool(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_bool(
+      val,
+    );
+  }
+
+  late final _duckdb_get_boolPtr =
+      _lookup<ffi.NativeFunction<ffi.Bool Function(duckdb_value)>>(
+          'duckdb_get_bool');
+  late final _duckdb_get_bool =
+      _duckdb_get_boolPtr.asFunction<bool Function(duckdb_value)>();
+
+  /// !
+  /// Returns the int8_t value of the given value.
+  ///
+  /// @param val A duckdb_value containing a tinyint
+  /// @return A int8_t, or MinValue<int8> if the value cannot be converted
+  int duckdb_get_int8(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_int8(
+      val,
+    );
+  }
+
+  late final _duckdb_get_int8Ptr =
+      _lookup<ffi.NativeFunction<ffi.Int8 Function(duckdb_value)>>(
+          'duckdb_get_int8');
+  late final _duckdb_get_int8 =
+      _duckdb_get_int8Ptr.asFunction<int Function(duckdb_value)>();
+
+  /// !
+  /// Returns the uint8_t value of the given value.
+  ///
+  /// @param val A duckdb_value containing a utinyint
+  /// @return A uint8_t, or MinValue<uint8> if the value cannot be converted
+  int duckdb_get_uint8(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_uint8(
+      val,
+    );
+  }
+
+  late final _duckdb_get_uint8Ptr =
+      _lookup<ffi.NativeFunction<ffi.Uint8 Function(duckdb_value)>>(
+          'duckdb_get_uint8');
+  late final _duckdb_get_uint8 =
+      _duckdb_get_uint8Ptr.asFunction<int Function(duckdb_value)>();
+
+  /// !
+  /// Returns the int16_t value of the given value.
+  ///
+  /// @param val A duckdb_value containing a smallint
+  /// @return A int16_t, or MinValue<int16> if the value cannot be converted
+  int duckdb_get_int16(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_int16(
+      val,
+    );
+  }
+
+  late final _duckdb_get_int16Ptr =
+      _lookup<ffi.NativeFunction<ffi.Int16 Function(duckdb_value)>>(
+          'duckdb_get_int16');
+  late final _duckdb_get_int16 =
+      _duckdb_get_int16Ptr.asFunction<int Function(duckdb_value)>();
+
+  /// !
+  /// Returns the uint16_t value of the given value.
+  ///
+  /// @param val A duckdb_value containing a usmallint
+  /// @return A uint16_t, or MinValue<uint16> if the value cannot be converted
+  int duckdb_get_uint16(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_uint16(
+      val,
+    );
+  }
+
+  late final _duckdb_get_uint16Ptr =
+      _lookup<ffi.NativeFunction<ffi.Uint16 Function(duckdb_value)>>(
+          'duckdb_get_uint16');
+  late final _duckdb_get_uint16 =
+      _duckdb_get_uint16Ptr.asFunction<int Function(duckdb_value)>();
+
+  /// !
+  /// Returns the int32_t value of the given value.
+  ///
+  /// @param val A duckdb_value containing a integer
+  /// @return A int32_t, or MinValue<int32> if the value cannot be converted
+  int duckdb_get_int32(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_int32(
+      val,
+    );
+  }
+
+  late final _duckdb_get_int32Ptr =
+      _lookup<ffi.NativeFunction<ffi.Int32 Function(duckdb_value)>>(
+          'duckdb_get_int32');
+  late final _duckdb_get_int32 =
+      _duckdb_get_int32Ptr.asFunction<int Function(duckdb_value)>();
+
+  /// !
+  /// Returns the uint32_t value of the given value.
+  ///
+  /// @param val A duckdb_value containing a uinteger
+  /// @return A uint32_t, or MinValue<uint32> if the value cannot be converted
+  int duckdb_get_uint32(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_uint32(
+      val,
+    );
+  }
+
+  late final _duckdb_get_uint32Ptr =
+      _lookup<ffi.NativeFunction<ffi.Uint32 Function(duckdb_value)>>(
+          'duckdb_get_uint32');
+  late final _duckdb_get_uint32 =
+      _duckdb_get_uint32Ptr.asFunction<int Function(duckdb_value)>();
+
+  /// !
+  /// Returns the int64_t value of the given value.
+  ///
+  /// @param val A duckdb_value containing a bigint
+  /// @return A int64_t, or MinValue<int64> if the value cannot be converted
+  int duckdb_get_int64(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_int64(
+      val,
+    );
+  }
+
+  late final _duckdb_get_int64Ptr =
+      _lookup<ffi.NativeFunction<ffi.Int64 Function(duckdb_value)>>(
+          'duckdb_get_int64');
+  late final _duckdb_get_int64 =
+      _duckdb_get_int64Ptr.asFunction<int Function(duckdb_value)>();
+
+  /// !
+  /// Returns the uint64_t value of the given value.
+  ///
+  /// @param val A duckdb_value containing a ubigint
+  /// @return A uint64_t, or MinValue<uint64> if the value cannot be converted
+  int duckdb_get_uint64(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_uint64(
+      val,
+    );
+  }
+
+  late final _duckdb_get_uint64Ptr =
+      _lookup<ffi.NativeFunction<ffi.Uint64 Function(duckdb_value)>>(
+          'duckdb_get_uint64');
+  late final _duckdb_get_uint64 =
+      _duckdb_get_uint64Ptr.asFunction<int Function(duckdb_value)>();
+
+  /// !
+  /// Returns the hugeint value of the given value.
+  ///
+  /// @param val A duckdb_value containing a hugeint
+  /// @return A duckdb_hugeint, or MinValue<hugeint> if the value cannot be converted
+  duckdb_hugeint duckdb_get_hugeint(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_hugeint(
+      val,
+    );
+  }
+
+  late final _duckdb_get_hugeintPtr =
+      _lookup<ffi.NativeFunction<duckdb_hugeint Function(duckdb_value)>>(
+          'duckdb_get_hugeint');
+  late final _duckdb_get_hugeint = _duckdb_get_hugeintPtr
+      .asFunction<duckdb_hugeint Function(duckdb_value)>();
+
+  /// !
+  /// Returns the uhugeint value of the given value.
+  ///
+  /// @param val A duckdb_value containing a uhugeint
+  /// @return A duckdb_uhugeint, or MinValue<uhugeint> if the value cannot be converted
+  duckdb_uhugeint duckdb_get_uhugeint(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_uhugeint(
+      val,
+    );
+  }
+
+  late final _duckdb_get_uhugeintPtr =
+      _lookup<ffi.NativeFunction<duckdb_uhugeint Function(duckdb_value)>>(
+          'duckdb_get_uhugeint');
+  late final _duckdb_get_uhugeint = _duckdb_get_uhugeintPtr
+      .asFunction<duckdb_uhugeint Function(duckdb_value)>();
+
+  /// !
+  /// Returns the float value of the given value.
+  ///
+  /// @param val A duckdb_value containing a float
+  /// @return A float, or NAN if the value cannot be converted
+  double duckdb_get_float(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_float(
+      val,
+    );
+  }
+
+  late final _duckdb_get_floatPtr =
+      _lookup<ffi.NativeFunction<ffi.Float Function(duckdb_value)>>(
+          'duckdb_get_float');
+  late final _duckdb_get_float =
+      _duckdb_get_floatPtr.asFunction<double Function(duckdb_value)>();
+
+  /// !
+  /// Returns the double value of the given value.
+  ///
+  /// @param val A duckdb_value containing a double
+  /// @return A double, or NAN if the value cannot be converted
+  double duckdb_get_double(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_double(
+      val,
+    );
+  }
+
+  late final _duckdb_get_doublePtr =
+      _lookup<ffi.NativeFunction<ffi.Double Function(duckdb_value)>>(
+          'duckdb_get_double');
+  late final _duckdb_get_double =
+      _duckdb_get_doublePtr.asFunction<double Function(duckdb_value)>();
+
+  /// !
+  /// Returns the date value of the given value.
+  ///
+  /// @param val A duckdb_value containing a date
+  /// @return A duckdb_date, or MinValue<date> if the value cannot be converted
+  duckdb_date duckdb_get_date(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_date(
+      val,
+    );
+  }
+
+  late final _duckdb_get_datePtr =
+      _lookup<ffi.NativeFunction<duckdb_date Function(duckdb_value)>>(
+          'duckdb_get_date');
+  late final _duckdb_get_date =
+      _duckdb_get_datePtr.asFunction<duckdb_date Function(duckdb_value)>();
+
+  /// !
+  /// Returns the time value of the given value.
+  ///
+  /// @param val A duckdb_value containing a time
+  /// @return A duckdb_time, or MinValue<time> if the value cannot be converted
+  duckdb_time duckdb_get_time(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_time(
+      val,
+    );
+  }
+
+  late final _duckdb_get_timePtr =
+      _lookup<ffi.NativeFunction<duckdb_time Function(duckdb_value)>>(
+          'duckdb_get_time');
+  late final _duckdb_get_time =
+      _duckdb_get_timePtr.asFunction<duckdb_time Function(duckdb_value)>();
+
+  /// !
+  /// Returns the time_tz value of the given value.
+  ///
+  /// @param val A duckdb_value containing a time_tz
+  /// @return A duckdb_time_tz, or MinValue<time_tz> if the value cannot be converted
+  duckdb_time_tz duckdb_get_time_tz(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_time_tz(
+      val,
+    );
+  }
+
+  late final _duckdb_get_time_tzPtr =
+      _lookup<ffi.NativeFunction<duckdb_time_tz Function(duckdb_value)>>(
+          'duckdb_get_time_tz');
+  late final _duckdb_get_time_tz = _duckdb_get_time_tzPtr
+      .asFunction<duckdb_time_tz Function(duckdb_value)>();
+
+  /// !
+  /// Returns the timestamp value of the given value.
+  ///
+  /// @param val A duckdb_value containing a timestamp
+  /// @return A duckdb_timestamp, or MinValue<timestamp> if the value cannot be converted
+  duckdb_timestamp duckdb_get_timestamp(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_timestamp(
+      val,
+    );
+  }
+
+  late final _duckdb_get_timestampPtr =
+      _lookup<ffi.NativeFunction<duckdb_timestamp Function(duckdb_value)>>(
+          'duckdb_get_timestamp');
+  late final _duckdb_get_timestamp = _duckdb_get_timestampPtr
+      .asFunction<duckdb_timestamp Function(duckdb_value)>();
+
+  /// !
+  /// Returns the interval value of the given value.
+  ///
+  /// @param val A duckdb_value containing a interval
+  /// @return A duckdb_interval, or MinValue<interval> if the value cannot be converted
+  duckdb_interval duckdb_get_interval(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_interval(
+      val,
+    );
+  }
+
+  late final _duckdb_get_intervalPtr =
+      _lookup<ffi.NativeFunction<duckdb_interval Function(duckdb_value)>>(
+          'duckdb_get_interval');
+  late final _duckdb_get_interval = _duckdb_get_intervalPtr
+      .asFunction<duckdb_interval Function(duckdb_value)>();
+
+  /// !
+  /// Returns the type of the given value. The type is valid as long as the value is not destroyed.
+  /// The type itself must not be destroyed.
+  ///
+  /// @param val A duckdb_value
+  /// @return A duckdb_logical_type.
+  duckdb_logical_type duckdb_get_value_type(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_value_type(
+      val,
+    );
+  }
+
+  late final _duckdb_get_value_typePtr =
+      _lookup<ffi.NativeFunction<duckdb_logical_type Function(duckdb_value)>>(
+          'duckdb_get_value_type');
+  late final _duckdb_get_value_type = _duckdb_get_value_typePtr
+      .asFunction<duckdb_logical_type Function(duckdb_value)>();
+
+  /// !
+  /// Returns the blob value of the given value.
+  ///
+  /// @param val A duckdb_value containing a blob
+  /// @return A duckdb_blob
+  duckdb_blob duckdb_get_blob(
+    duckdb_value val,
+  ) {
+    return _duckdb_get_blob(
+      val,
+    );
+  }
+
+  late final _duckdb_get_blobPtr =
+      _lookup<ffi.NativeFunction<duckdb_blob Function(duckdb_value)>>(
+          'duckdb_get_blob');
+  late final _duckdb_get_blob =
+      _duckdb_get_blobPtr.asFunction<duckdb_blob Function(duckdb_value)>();
+
+  /// !
+  /// Obtains a string representation of the given value.
+  /// The result must be destroyed with `duckdb_free`.
+  ///
+  /// @param value The value
+  /// @return The string value. This must be destroyed with `duckdb_free`.
+  ffi.Pointer<ffi.Char> duckdb_get_varchar(
+    duckdb_value value,
+  ) {
+    return _duckdb_get_varchar(
+      value,
+    );
+  }
+
+  late final _duckdb_get_varcharPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(duckdb_value)>>(
+          'duckdb_get_varchar');
+  late final _duckdb_get_varchar = _duckdb_get_varcharPtr
+      .asFunction<ffi.Pointer<ffi.Char> Function(duckdb_value)>();
+
+  /// !
+  /// Creates a struct value from a type and an array of values. Must be destroyed with `duckdb_destroy_value`.
+  ///
+  /// @param type The type of the struct
+  /// @param values The values for the struct fields
+  /// @return The struct value, or nullptr, if any child type is `DUCKDB_TYPE_ANY` or `DUCKDB_TYPE_INVALID`.
   duckdb_value duckdb_create_struct_value(
     duckdb_logical_type type,
     ffi.Pointer<duckdb_value> values,
@@ -2837,12 +3670,13 @@ class Bindings {
               duckdb_logical_type, ffi.Pointer<duckdb_value>)>();
 
   /// !
-  /// Creates a list value from a type and an array of values of length `value_count`
+  /// Creates a list value from a child (element) type and an array of values of length `value_count`.
+  /// Must be destroyed with `duckdb_destroy_value`.
   ///
-  /// type: The type of the list
-  /// values: The values for the list
-  /// value_count: The number of values in the list
-  /// returns: The value. This must be destroyed with `duckdb_destroy_value`.
+  /// @param type The type of the list
+  /// @param values The values for the list
+  /// @param value_count The number of values in the list
+  /// @return The list value, or nullptr, if the child type is `DUCKDB_TYPE_ANY` or `DUCKDB_TYPE_INVALID`.
   duckdb_value duckdb_create_list_value(
     duckdb_logical_type type,
     ffi.Pointer<duckdb_value> values,
@@ -2865,12 +3699,13 @@ class Bindings {
               duckdb_logical_type, ffi.Pointer<duckdb_value>, int)>();
 
   /// !
-  /// Creates a array value from a type and an array of values of length `value_count`
+  /// Creates an array value from a child (element) type and an array of values of length `value_count`.
+  /// Must be destroyed with `duckdb_destroy_value`.
   ///
-  /// type: The type of the array
-  /// values: The values for the array
-  /// value_count: The number of values in the array
-  /// returns: The value. This must be destroyed with `duckdb_destroy_value`.
+  /// @param type The type of the array
+  /// @param values The values for the array
+  /// @param value_count The number of values in the array
+  /// @return The array value, or nullptr, if the child type is `DUCKDB_TYPE_ANY` or `DUCKDB_TYPE_INVALID`.
   duckdb_value duckdb_create_array_value(
     duckdb_logical_type type,
     ffi.Pointer<duckdb_value> values,
@@ -2893,52 +3728,77 @@ class Bindings {
               duckdb_logical_type, ffi.Pointer<duckdb_value>, int)>();
 
   /// !
-  /// Obtains a string representation of the given value.
-  /// The result must be destroyed with `duckdb_free`.
+  /// Returns the number of elements in a MAP value.
   ///
-  /// value: The value
-  /// returns: The string value. This must be destroyed with `duckdb_free`.
-  ffi.Pointer<ffi.Char> duckdb_get_varchar(
+  /// @param value The MAP value.
+  /// @return The number of elements in the map.
+  int duckdb_get_map_size(
     duckdb_value value,
   ) {
-    return _duckdb_get_varchar(
+    return _duckdb_get_map_size(
       value,
     );
   }
 
-  late final _duckdb_get_varcharPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(duckdb_value)>>(
-          'duckdb_get_varchar');
-  late final _duckdb_get_varchar = _duckdb_get_varcharPtr
-      .asFunction<ffi.Pointer<ffi.Char> Function(duckdb_value)>();
+  late final _duckdb_get_map_sizePtr =
+      _lookup<ffi.NativeFunction<idx_t Function(duckdb_value)>>(
+          'duckdb_get_map_size');
+  late final _duckdb_get_map_size =
+      _duckdb_get_map_sizePtr.asFunction<int Function(duckdb_value)>();
 
   /// !
-  /// Obtains an int64 of the given value.
+  /// Returns the MAP key at index as a duckdb_value.
   ///
-  /// value: The value
-  /// returns: The int64 value, or 0 if no conversion is possible
-  int duckdb_get_int64(
+  /// @param value The MAP value.
+  /// @param index The index of the key.
+  /// @return The key as a duckdb_value.
+  duckdb_value duckdb_get_map_key(
     duckdb_value value,
+    int index,
   ) {
-    return _duckdb_get_int64(
+    return _duckdb_get_map_key(
       value,
+      index,
     );
   }
 
-  late final _duckdb_get_int64Ptr =
-      _lookup<ffi.NativeFunction<ffi.Int64 Function(duckdb_value)>>(
-          'duckdb_get_int64');
-  late final _duckdb_get_int64 =
-      _duckdb_get_int64Ptr.asFunction<int Function(duckdb_value)>();
+  late final _duckdb_get_map_keyPtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(duckdb_value, idx_t)>>(
+          'duckdb_get_map_key');
+  late final _duckdb_get_map_key = _duckdb_get_map_keyPtr
+      .asFunction<duckdb_value Function(duckdb_value, int)>();
 
   /// !
-  /// Creates a `duckdb_logical_type` from a standard primitive type.
-  /// The resulting type should be destroyed with `duckdb_destroy_logical_type`.
+  /// Returns the MAP value at index as a duckdb_value.
   ///
-  /// This should not be used with `DUCKDB_TYPE_DECIMAL`.
+  /// @param value The MAP value.
+  /// @param index The index of the value.
+  /// @return The value as a duckdb_value.
+  duckdb_value duckdb_get_map_value(
+    duckdb_value value,
+    int index,
+  ) {
+    return _duckdb_get_map_value(
+      value,
+      index,
+    );
+  }
+
+  late final _duckdb_get_map_valuePtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(duckdb_value, idx_t)>>(
+          'duckdb_get_map_value');
+  late final _duckdb_get_map_value = _duckdb_get_map_valuePtr
+      .asFunction<duckdb_value Function(duckdb_value, int)>();
+
+  /// !
+  /// Creates a `duckdb_logical_type` from a primitive type.
+  /// The resulting logical type must be destroyed with `duckdb_destroy_logical_type`.
   ///
-  /// type: The primitive type to create.
-  /// returns: The logical type.
+  /// Returns an invalid logical type, if type is: `DUCKDB_TYPE_INVALID`, `DUCKDB_TYPE_DECIMAL`, `DUCKDB_TYPE_ENUM`,
+  /// `DUCKDB_TYPE_LIST`, `DUCKDB_TYPE_STRUCT`, `DUCKDB_TYPE_MAP`, `DUCKDB_TYPE_ARRAY`, or `DUCKDB_TYPE_UNION`.
+  ///
+  /// @param type The primitive type to create.
+  /// @return The logical type.
   duckdb_logical_type duckdb_create_logical_type(
     int type,
   ) {
@@ -2954,11 +3814,11 @@ class Bindings {
       .asFunction<duckdb_logical_type Function(int)>();
 
   /// !
-  /// Returns the alias of a duckdb_logical_type, if one is set, else `NULL`.
+  /// Returns the alias of a duckdb_logical_type, if set, else `nullptr`.
   /// The result must be destroyed with `duckdb_free`.
   ///
-  /// type: The logical type to return the alias of
-  /// returns: The alias or `NULL`
+  /// @param type The logical type
+  /// @return The alias or `nullptr`
   ffi.Pointer<ffi.Char> duckdb_logical_type_get_alias(
     duckdb_logical_type type,
   ) {
@@ -2975,11 +3835,33 @@ class Bindings {
       .asFunction<ffi.Pointer<ffi.Char> Function(duckdb_logical_type)>();
 
   /// !
-  /// Creates a list type from its child type.
-  /// The resulting type should be destroyed with `duckdb_destroy_logical_type`.
+  /// Sets the alias of a duckdb_logical_type.
   ///
-  /// type: The child type of list type to create.
-  /// returns: The logical type.
+  /// @param type The logical type
+  /// @param alias The alias to set
+  void duckdb_logical_type_set_alias(
+    duckdb_logical_type type,
+    ffi.Pointer<ffi.Char> alias,
+  ) {
+    return _duckdb_logical_type_set_alias(
+      type,
+      alias,
+    );
+  }
+
+  late final _duckdb_logical_type_set_aliasPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_logical_type,
+              ffi.Pointer<ffi.Char>)>>('duckdb_logical_type_set_alias');
+  late final _duckdb_logical_type_set_alias = _duckdb_logical_type_set_aliasPtr
+      .asFunction<void Function(duckdb_logical_type, ffi.Pointer<ffi.Char>)>();
+
+  /// !
+  /// Creates a LIST type from its child type.
+  /// The return type must be destroyed with `duckdb_destroy_logical_type`.
+  ///
+  /// @param type The child type of the list
+  /// @return The logical type.
   duckdb_logical_type duckdb_create_list_type(
     duckdb_logical_type type,
   ) {
@@ -2996,12 +3878,12 @@ class Bindings {
       .asFunction<duckdb_logical_type Function(duckdb_logical_type)>();
 
   /// !
-  /// Creates a array type from its child type.
-  /// The resulting type should be destroyed with `duckdb_destroy_logical_type`.
+  /// Creates an ARRAY type from its child type.
+  /// The return type must be destroyed with `duckdb_destroy_logical_type`.
   ///
-  /// type: The child type of array type to create.
-  /// array_size: The number of elements in the array.
-  /// returns: The logical type.
+  /// @param type The child type of the array.
+  /// @param array_size The number of elements in the array.
+  /// @return The logical type.
   duckdb_logical_type duckdb_create_array_type(
     duckdb_logical_type type,
     int array_size,
@@ -3020,11 +3902,12 @@ class Bindings {
       .asFunction<duckdb_logical_type Function(duckdb_logical_type, int)>();
 
   /// !
-  /// Creates a map type from its key type and value type.
-  /// The resulting type should be destroyed with `duckdb_destroy_logical_type`.
+  /// Creates a MAP type from its key type and value type.
+  /// The return type must be destroyed with `duckdb_destroy_logical_type`.
   ///
-  /// type: The key type and value type of map type to create.
-  /// returns: The logical type.
+  /// @param key_type The map's key type.
+  /// @param value_type The map's value type.
+  /// @return The logical type.
   duckdb_logical_type duckdb_create_map_type(
     duckdb_logical_type key_type,
     duckdb_logical_type value_type,
@@ -3043,12 +3926,13 @@ class Bindings {
       duckdb_logical_type Function(duckdb_logical_type, duckdb_logical_type)>();
 
   /// !
-  /// Creates a UNION type from the passed types array.
-  /// The resulting type should be destroyed with `duckdb_destroy_logical_type`.
+  /// Creates a UNION type from the passed arrays.
+  /// The return type must be destroyed with `duckdb_destroy_logical_type`.
   ///
-  /// types: The array of types that the union should consist of.
-  /// type_amount: The size of the types array.
-  /// returns: The logical type.
+  /// @param member_types The array of union member types.
+  /// @param member_names The union member names.
+  /// @param member_count The number of union members.
+  /// @return The logical type.
   duckdb_logical_type duckdb_create_union_type(
     ffi.Pointer<duckdb_logical_type> member_types,
     ffi.Pointer<ffi.Pointer<ffi.Char>> member_names,
@@ -3073,13 +3957,13 @@ class Bindings {
               ffi.Pointer<ffi.Pointer<ffi.Char>>, int)>();
 
   /// !
-  /// Creates a STRUCT type from the passed member name and type arrays.
-  /// The resulting type should be destroyed with `duckdb_destroy_logical_type`.
+  /// Creates a STRUCT type based on the member types and names.
+  /// The resulting type must be destroyed with `duckdb_destroy_logical_type`.
   ///
-  /// member_types: The array of types that the struct should consist of.
-  /// member_names: The array of names that the struct should consist of.
-  /// member_count: The number of members that were specified for both arrays.
-  /// returns: The logical type.
+  /// @param member_types The array of types of the struct members.
+  /// @param member_names The array of names of the struct members.
+  /// @param member_count The number of members of the struct.
+  /// @return The logical type.
   duckdb_logical_type duckdb_create_struct_type(
     ffi.Pointer<duckdb_logical_type> member_types,
     ffi.Pointer<ffi.Pointer<ffi.Char>> member_names,
@@ -3107,10 +3991,9 @@ class Bindings {
   /// Creates an ENUM type from the passed member name array.
   /// The resulting type should be destroyed with `duckdb_destroy_logical_type`.
   ///
-  /// enum_name: The name of the enum.
-  /// member_names: The array of names that the enum should consist of.
-  /// member_count: The number of elements that were specified in the array.
-  /// returns: The logical type.
+  /// @param member_names The array of names that the enum should consist of.
+  /// @param member_count The number of elements that were specified in the array.
+  /// @return The logical type.
   duckdb_logical_type duckdb_create_enum_type(
     ffi.Pointer<ffi.Pointer<ffi.Char>> member_names,
     int member_count,
@@ -3129,12 +4012,12 @@ class Bindings {
       duckdb_logical_type Function(ffi.Pointer<ffi.Pointer<ffi.Char>>, int)>();
 
   /// !
-  /// Creates a `duckdb_logical_type` of type decimal with the specified width and scale.
+  /// Creates a DECIMAL type with the specified width and scale.
   /// The resulting type should be destroyed with `duckdb_destroy_logical_type`.
   ///
-  /// width: The width of the decimal type
-  /// scale: The scale of the decimal type
-  /// returns: The logical type.
+  /// @param width The width of the decimal type
+  /// @param scale The scale of the decimal type
+  /// @return The logical type.
   duckdb_logical_type duckdb_create_decimal_type(
     int width,
     int scale,
@@ -3153,10 +4036,10 @@ class Bindings {
       .asFunction<duckdb_logical_type Function(int, int)>();
 
   /// !
-  /// Retrieves the enum type class of a `duckdb_logical_type`.
+  /// Retrieves the enum `duckdb_type` of a `duckdb_logical_type`.
   ///
-  /// type: The logical type object
-  /// returns: The type id
+  /// @param type The logical type.
+  /// @return The `duckdb_type` id.
   int duckdb_get_type_id(
     duckdb_logical_type type,
   ) {
@@ -3174,8 +4057,8 @@ class Bindings {
   /// !
   /// Retrieves the width of a decimal type.
   ///
-  /// type: The logical type object
-  /// returns: The width of the decimal type
+  /// @param type The logical type object
+  /// @return The width of the decimal type
   int duckdb_decimal_width(
     duckdb_logical_type type,
   ) {
@@ -3193,8 +4076,8 @@ class Bindings {
   /// !
   /// Retrieves the scale of a decimal type.
   ///
-  /// type: The logical type object
-  /// returns: The scale of the decimal type
+  /// @param type The logical type object
+  /// @return The scale of the decimal type
   int duckdb_decimal_scale(
     duckdb_logical_type type,
   ) {
@@ -3212,8 +4095,8 @@ class Bindings {
   /// !
   /// Retrieves the internal storage type of a decimal type.
   ///
-  /// type: The logical type object
-  /// returns: The internal type of the decimal type
+  /// @param type The logical type object
+  /// @return The internal type of the decimal type
   int duckdb_decimal_internal_type(
     duckdb_logical_type type,
   ) {
@@ -3231,8 +4114,8 @@ class Bindings {
   /// !
   /// Retrieves the internal storage type of an enum type.
   ///
-  /// type: The logical type object
-  /// returns: The internal type of the enum type
+  /// @param type The logical type object
+  /// @return The internal type of the enum type
   int duckdb_enum_internal_type(
     duckdb_logical_type type,
   ) {
@@ -3250,8 +4133,8 @@ class Bindings {
   /// !
   /// Retrieves the dictionary size of the enum type.
   ///
-  /// type: The logical type object
-  /// returns: The dictionary size of the enum type
+  /// @param type The logical type object
+  /// @return The dictionary size of the enum type
   int duckdb_enum_dictionary_size(
     duckdb_logical_type type,
   ) {
@@ -3271,9 +4154,9 @@ class Bindings {
   ///
   /// The result must be freed with `duckdb_free`.
   ///
-  /// type: The logical type object
-  /// index: The index in the dictionary
-  /// returns: The string value of the enum type. Must be freed with `duckdb_free`.
+  /// @param type The logical type object
+  /// @param index The index in the dictionary
+  /// @return The string value of the enum type. Must be freed with `duckdb_free`.
   ffi.Pointer<ffi.Char> duckdb_enum_dictionary_value(
     duckdb_logical_type type,
     int index,
@@ -3292,12 +4175,11 @@ class Bindings {
       .asFunction<ffi.Pointer<ffi.Char> Function(duckdb_logical_type, int)>();
 
   /// !
-  /// Retrieves the child type of the given list type.
-  ///
+  /// Retrieves the child type of the given LIST type. Also accepts MAP types.
   /// The result must be freed with `duckdb_destroy_logical_type`.
   ///
-  /// type: The logical type object
-  /// returns: The child type of the list type. Must be destroyed with `duckdb_destroy_logical_type`.
+  /// @param type The logical type, either LIST or MAP.
+  /// @return The child type of the LIST or MAP type.
   duckdb_logical_type duckdb_list_type_child_type(
     duckdb_logical_type type,
   ) {
@@ -3314,12 +4196,12 @@ class Bindings {
       .asFunction<duckdb_logical_type Function(duckdb_logical_type)>();
 
   /// !
-  /// Retrieves the child type of the given array type.
+  /// Retrieves the child type of the given ARRAY type.
   ///
   /// The result must be freed with `duckdb_destroy_logical_type`.
   ///
-  /// type: The logical type object
-  /// returns: The child type of the array type. Must be destroyed with `duckdb_destroy_logical_type`.
+  /// @param type The logical type. Must be ARRAY.
+  /// @return The child type of the ARRAY type.
   duckdb_logical_type duckdb_array_type_child_type(
     duckdb_logical_type type,
   ) {
@@ -3338,8 +4220,8 @@ class Bindings {
   /// !
   /// Retrieves the array size of the given array type.
   ///
-  /// type: The logical type object
-  /// returns: The fixed number of elements the values of this array type can store.
+  /// @param type The logical type object
+  /// @return The fixed number of elements the values of this array type can store.
   int duckdb_array_type_array_size(
     duckdb_logical_type type,
   ) {
@@ -3359,8 +4241,8 @@ class Bindings {
   ///
   /// The result must be freed with `duckdb_destroy_logical_type`.
   ///
-  /// type: The logical type object
-  /// returns: The key type of the map type. Must be destroyed with `duckdb_destroy_logical_type`.
+  /// @param type The logical type object
+  /// @return The key type of the map type. Must be destroyed with `duckdb_destroy_logical_type`.
   duckdb_logical_type duckdb_map_type_key_type(
     duckdb_logical_type type,
   ) {
@@ -3381,8 +4263,8 @@ class Bindings {
   ///
   /// The result must be freed with `duckdb_destroy_logical_type`.
   ///
-  /// type: The logical type object
-  /// returns: The value type of the map type. Must be destroyed with `duckdb_destroy_logical_type`.
+  /// @param type The logical type object
+  /// @return The value type of the map type. Must be destroyed with `duckdb_destroy_logical_type`.
   duckdb_logical_type duckdb_map_type_value_type(
     duckdb_logical_type type,
   ) {
@@ -3401,8 +4283,8 @@ class Bindings {
   /// !
   /// Returns the number of children of a struct type.
   ///
-  /// type: The logical type object
-  /// returns: The number of children of a struct type.
+  /// @param type The logical type object
+  /// @return The number of children of a struct type.
   int duckdb_struct_type_child_count(
     duckdb_logical_type type,
   ) {
@@ -3423,9 +4305,9 @@ class Bindings {
   ///
   /// The result must be freed with `duckdb_free`.
   ///
-  /// type: The logical type object
-  /// index: The child index
-  /// returns: The name of the struct type. Must be freed with `duckdb_free`.
+  /// @param type The logical type object
+  /// @param index The child index
+  /// @return The name of the struct type. Must be freed with `duckdb_free`.
   ffi.Pointer<ffi.Char> duckdb_struct_type_child_name(
     duckdb_logical_type type,
     int index,
@@ -3448,9 +4330,9 @@ class Bindings {
   ///
   /// The result must be freed with `duckdb_destroy_logical_type`.
   ///
-  /// type: The logical type object
-  /// index: The child index
-  /// returns: The child type of the struct type. Must be destroyed with `duckdb_destroy_logical_type`.
+  /// @param type The logical type object
+  /// @param index The child index
+  /// @return The child type of the struct type. Must be destroyed with `duckdb_destroy_logical_type`.
   duckdb_logical_type duckdb_struct_type_child_type(
     duckdb_logical_type type,
     int index,
@@ -3471,8 +4353,8 @@ class Bindings {
   /// !
   /// Returns the number of members that the union type has.
   ///
-  /// type: The logical type (union) object
-  /// returns: The number of members of a union type.
+  /// @param type The logical type (union) object
+  /// @return The number of members of a union type.
   int duckdb_union_type_member_count(
     duckdb_logical_type type,
   ) {
@@ -3493,9 +4375,9 @@ class Bindings {
   ///
   /// The result must be freed with `duckdb_free`.
   ///
-  /// type: The logical type object
-  /// index: The child index
-  /// returns: The name of the union member. Must be freed with `duckdb_free`.
+  /// @param type The logical type object
+  /// @param index The child index
+  /// @return The name of the union member. Must be freed with `duckdb_free`.
   ffi.Pointer<ffi.Char> duckdb_union_type_member_name(
     duckdb_logical_type type,
     int index,
@@ -3518,9 +4400,9 @@ class Bindings {
   ///
   /// The result must be freed with `duckdb_destroy_logical_type`.
   ///
-  /// type: The logical type object
-  /// index: The child index
-  /// returns: The child type of the union member. Must be destroyed with `duckdb_destroy_logical_type`.
+  /// @param type The logical type object
+  /// @param index The child index
+  /// @return The child type of the union member. Must be destroyed with `duckdb_destroy_logical_type`.
   duckdb_logical_type duckdb_union_type_member_type(
     duckdb_logical_type type,
     int index,
@@ -3541,7 +4423,7 @@ class Bindings {
   /// !
   /// Destroys the logical type and de-allocates all memory allocated for that type.
   ///
-  /// type: The logical type to destroy.
+  /// @param type The logical type to destroy.
   void duckdb_destroy_logical_type(
     ffi.Pointer<duckdb_logical_type> type,
   ) {
@@ -3558,13 +4440,40 @@ class Bindings {
       .asFunction<void Function(ffi.Pointer<duckdb_logical_type>)>();
 
   /// !
-  /// Creates an empty DataChunk with the specified set of types.
+  /// Registers a custom type within the given connection.
+  /// The type must have an alias
   ///
-  /// Note that the result must be destroyed with `duckdb_destroy_data_chunk`.
+  /// @param con The connection to use
+  /// @param type The custom type to register
+  /// @return Whether or not the registration was successful.
+  int duckdb_register_logical_type(
+    duckdb_connection con,
+    duckdb_logical_type type,
+    duckdb_create_type_info info,
+  ) {
+    return _duckdb_register_logical_type(
+      con,
+      type,
+      info,
+    );
+  }
+
+  late final _duckdb_register_logical_typePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int32 Function(duckdb_connection, duckdb_logical_type,
+              duckdb_create_type_info)>>('duckdb_register_logical_type');
+  late final _duckdb_register_logical_type =
+      _duckdb_register_logical_typePtr.asFunction<
+          int Function(duckdb_connection, duckdb_logical_type,
+              duckdb_create_type_info)>();
+
+  /// !
+  /// Creates an empty data chunk with the specified column types.
+  /// The result must be destroyed with `duckdb_destroy_data_chunk`.
   ///
-  /// types: An array of types of the data chunk.
-  /// column_count: The number of columns.
-  /// returns: The data chunk.
+  /// @param types An array of column types. Column types can not contain ANY and INVALID types.
+  /// @param column_count The number of columns.
+  /// @return The data chunk.
   duckdb_data_chunk duckdb_create_data_chunk(
     ffi.Pointer<duckdb_logical_type> types,
     int column_count,
@@ -3586,7 +4495,7 @@ class Bindings {
   /// !
   /// Destroys the data chunk and de-allocates all memory allocated for that chunk.
   ///
-  /// chunk: The data chunk to destroy.
+  /// @param chunk The data chunk to destroy.
   void duckdb_destroy_data_chunk(
     ffi.Pointer<duckdb_data_chunk> chunk,
   ) {
@@ -3604,8 +4513,10 @@ class Bindings {
 
   /// !
   /// Resets a data chunk, clearing the validity masks and setting the cardinality of the data chunk to 0.
+  /// After calling this method, you must call `duckdb_vector_get_validity` and `duckdb_vector_get_data` to obtain current
+  /// data and validity pointers
   ///
-  /// chunk: The data chunk to reset.
+  /// @param chunk The data chunk to reset.
   void duckdb_data_chunk_reset(
     duckdb_data_chunk chunk,
   ) {
@@ -3623,8 +4534,8 @@ class Bindings {
   /// !
   /// Retrieves the number of columns in a data chunk.
   ///
-  /// chunk: The data chunk to get the data from
-  /// returns: The number of columns in the data chunk
+  /// @param chunk The data chunk to get the data from
+  /// @return The number of columns in the data chunk
   int duckdb_data_chunk_get_column_count(
     duckdb_data_chunk chunk,
   ) {
@@ -3646,8 +4557,8 @@ class Bindings {
   /// The pointer to the vector is valid for as long as the chunk is alive.
   /// It does NOT need to be destroyed.
   ///
-  /// chunk: The data chunk to get the data from
-  /// returns: The vector
+  /// @param chunk The data chunk to get the data from
+  /// @return The vector
   duckdb_vector duckdb_data_chunk_get_vector(
     duckdb_data_chunk chunk,
     int col_idx,
@@ -3667,8 +4578,8 @@ class Bindings {
   /// !
   /// Retrieves the current number of tuples in a data chunk.
   ///
-  /// chunk: The data chunk to get the data from
-  /// returns: The number of tuples in the data chunk
+  /// @param chunk The data chunk to get the data from
+  /// @return The number of tuples in the data chunk
   int duckdb_data_chunk_get_size(
     duckdb_data_chunk chunk,
   ) {
@@ -3686,8 +4597,8 @@ class Bindings {
   /// !
   /// Sets the current number of tuples in a data chunk.
   ///
-  /// chunk: The data chunk to set the size in
-  /// size: The number of tuples in the data chunk
+  /// @param chunk The data chunk to set the size in
+  /// @param size The number of tuples in the data chunk
   void duckdb_data_chunk_set_size(
     duckdb_data_chunk chunk,
     int size,
@@ -3709,8 +4620,8 @@ class Bindings {
   ///
   /// The result must be destroyed with `duckdb_destroy_logical_type`.
   ///
-  /// vector: The vector get the data from
-  /// returns: The type of the vector
+  /// @param vector The vector get the data from
+  /// @return The type of the vector
   duckdb_logical_type duckdb_vector_get_column_type(
     duckdb_vector vector,
   ) {
@@ -3731,8 +4642,8 @@ class Bindings {
   /// The data pointer can be used to read or write values from the vector.
   /// How to read or write values depends on the type of the vector.
   ///
-  /// vector: The vector to get the data from
-  /// returns: The data pointer
+  /// @param vector The vector to get the data from
+  /// @return The data pointer
   ffi.Pointer<ffi.Void> duckdb_vector_get_data(
     duckdb_vector vector,
   ) {
@@ -3764,8 +4675,8 @@ class Bindings {
   ///
   /// Alternatively, the (slower) duckdb_validity_row_is_valid function can be used.
   ///
-  /// vector: The vector to get the data from
-  /// returns: The pointer to the validity mask, or NULL if no validity mask is present
+  /// @param vector The vector to get the data from
+  /// @return The pointer to the validity mask, or NULL if no validity mask is present
   ffi.Pointer<ffi.Uint64> duckdb_vector_get_validity(
     duckdb_vector vector,
   ) {
@@ -3786,7 +4697,7 @@ class Bindings {
   /// After this function is called, `duckdb_vector_get_validity` will ALWAYS return non-NULL.
   /// This allows null values to be written to the vector, regardless of whether a validity mask was present before.
   ///
-  /// vector: The vector to alter
+  /// @param vector The vector to alter
   void duckdb_vector_ensure_validity_writable(
     duckdb_vector vector,
   ) {
@@ -3805,9 +4716,9 @@ class Bindings {
   /// !
   /// Assigns a string element in the vector at the specified location.
   ///
-  /// vector: The vector to alter
-  /// index: The row position in the vector to assign the string to
-  /// str: The null-terminated string
+  /// @param vector The vector to alter
+  /// @param index The row position in the vector to assign the string to
+  /// @param str The null-terminated string
   void duckdb_vector_assign_string_element(
     duckdb_vector vector,
     int index,
@@ -3831,10 +4742,10 @@ class Bindings {
   /// !
   /// Assigns a string element in the vector at the specified location. You may also use this function to assign BLOBs.
   ///
-  /// vector: The vector to alter
-  /// index: The row position in the vector to assign the string to
-  /// str: The string
-  /// str_len: The length of the string (in bytes)
+  /// @param vector The vector to alter
+  /// @param index The row position in the vector to assign the string to
+  /// @param str The string
+  /// @param str_len The length of the string (in bytes)
   void duckdb_vector_assign_string_element_len(
     duckdb_vector vector,
     int index,
@@ -3862,8 +4773,8 @@ class Bindings {
   ///
   /// The resulting vector is valid as long as the parent vector is valid.
   ///
-  /// vector: The vector
-  /// returns: The child vector
+  /// @param vector The vector
+  /// @return The child vector
   duckdb_vector duckdb_list_vector_get_child(
     duckdb_vector vector,
   ) {
@@ -3881,8 +4792,8 @@ class Bindings {
   /// !
   /// Returns the size of the child vector of the list.
   ///
-  /// vector: The vector
-  /// returns: The size of the child list
+  /// @param vector The vector
+  /// @return The size of the child list
   int duckdb_list_vector_get_size(
     duckdb_vector vector,
   ) {
@@ -3900,9 +4811,9 @@ class Bindings {
   /// !
   /// Sets the total size of the underlying child-vector of a list vector.
   ///
-  /// vector: The list vector.
-  /// size: The size of the child list.
-  /// returns: The duckdb state. Returns DuckDBError if the vector is nullptr.
+  /// @param vector The list vector.
+  /// @param size The size of the child list.
+  /// @return The duckdb state. Returns DuckDBError if the vector is nullptr.
   int duckdb_list_vector_set_size(
     duckdb_vector vector,
     int size,
@@ -3922,9 +4833,12 @@ class Bindings {
   /// !
   /// Sets the total capacity of the underlying child-vector of a list.
   ///
-  /// vector: The list vector.
-  /// required_capacity: the total capacity to reserve.
-  /// return: The duckdb state. Returns DuckDBError if the vector is nullptr.
+  /// After calling this method, you must call `duckdb_vector_get_validity` and `duckdb_vector_get_data` to obtain current
+  /// data and validity pointers
+  ///
+  /// @param vector The list vector.
+  /// @param required_capacity the total capacity to reserve.
+  /// @return The duckdb state. Returns DuckDBError if the vector is nullptr.
   int duckdb_list_vector_reserve(
     duckdb_vector vector,
     int required_capacity,
@@ -3946,9 +4860,9 @@ class Bindings {
   ///
   /// The resulting vector is valid as long as the parent vector is valid.
   ///
-  /// vector: The vector
-  /// index: The child index
-  /// returns: The child vector
+  /// @param vector The vector
+  /// @param index The child index
+  /// @return The child vector
   duckdb_vector duckdb_struct_vector_get_child(
     duckdb_vector vector,
     int index,
@@ -3972,8 +4886,8 @@ class Bindings {
   /// The resulting vector is valid as long as the parent vector is valid.
   /// The resulting vector has the size of the parent vector multiplied by the array size.
   ///
-  /// vector: The vector
-  /// returns: The child vector
+  /// @param vector The vector
+  /// @return The child vector
   duckdb_vector duckdb_array_vector_get_child(
     duckdb_vector vector,
   ) {
@@ -3991,9 +4905,9 @@ class Bindings {
   /// !
   /// Returns whether or not a row is valid (i.e. not NULL) in the given validity mask.
   ///
-  /// validity: The validity mask, as obtained through `duckdb_vector_get_validity`
-  /// row: The row index
-  /// returns: true if the row is valid, false otherwise
+  /// @param validity The validity mask, as obtained through `duckdb_vector_get_validity`
+  /// @param row The row index
+  /// @return true if the row is valid, false otherwise
   bool duckdb_validity_row_is_valid(
     ffi.Pointer<ffi.Uint64> validity,
     int row,
@@ -4017,9 +4931,9 @@ class Bindings {
   /// Note that `duckdb_vector_ensure_validity_writable` should be called before calling `duckdb_vector_get_validity`,
   /// to ensure that there is a validity mask to write to.
   ///
-  /// validity: The validity mask, as obtained through `duckdb_vector_get_validity`.
-  /// row: The row index
-  /// valid: Whether or not to set the row to valid, or invalid
+  /// @param validity The validity mask, as obtained through `duckdb_vector_get_validity`.
+  /// @param row The row index
+  /// @param valid Whether or not to set the row to valid, or invalid
   void duckdb_validity_set_row_validity(
     ffi.Pointer<ffi.Uint64> validity,
     int row,
@@ -4045,8 +4959,8 @@ class Bindings {
   ///
   /// Equivalent to `duckdb_validity_set_row_validity` with valid set to false.
   ///
-  /// validity: The validity mask
-  /// row: The row index
+  /// @param validity The validity mask
+  /// @param row The row index
   void duckdb_validity_set_row_invalid(
     ffi.Pointer<ffi.Uint64> validity,
     int row,
@@ -4070,8 +4984,8 @@ class Bindings {
   ///
   /// Equivalent to `duckdb_validity_set_row_validity` with valid set to true.
   ///
-  /// validity: The validity mask
-  /// row: The row index
+  /// @param validity The validity mask
+  /// @param row The row index
   void duckdb_validity_set_row_valid(
     ffi.Pointer<ffi.Uint64> validity,
     int row,
@@ -4090,11 +5004,791 @@ class Bindings {
       .asFunction<void Function(ffi.Pointer<ffi.Uint64>, int)>();
 
   /// !
+  /// Creates a new empty scalar function.
+  ///
+  /// The return value should be destroyed with `duckdb_destroy_scalar_function`.
+  ///
+  /// @return The scalar function object.
+  duckdb_scalar_function duckdb_create_scalar_function() {
+    return _duckdb_create_scalar_function();
+  }
+
+  late final _duckdb_create_scalar_functionPtr =
+      _lookup<ffi.NativeFunction<duckdb_scalar_function Function()>>(
+          'duckdb_create_scalar_function');
+  late final _duckdb_create_scalar_function = _duckdb_create_scalar_functionPtr
+      .asFunction<duckdb_scalar_function Function()>();
+
+  /// !
+  /// Destroys the given scalar function object.
+  ///
+  /// @param scalar_function The scalar function to destroy
+  void duckdb_destroy_scalar_function(
+    ffi.Pointer<duckdb_scalar_function> scalar_function,
+  ) {
+    return _duckdb_destroy_scalar_function(
+      scalar_function,
+    );
+  }
+
+  late final _duckdb_destroy_scalar_functionPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Pointer<duckdb_scalar_function>)>>(
+      'duckdb_destroy_scalar_function');
+  late final _duckdb_destroy_scalar_function =
+      _duckdb_destroy_scalar_functionPtr
+          .asFunction<void Function(ffi.Pointer<duckdb_scalar_function>)>();
+
+  /// !
+  /// Sets the name of the given scalar function.
+  ///
+  /// @param scalar_function The scalar function
+  /// @param name The name of the scalar function
+  void duckdb_scalar_function_set_name(
+    duckdb_scalar_function scalar_function,
+    ffi.Pointer<ffi.Char> name,
+  ) {
+    return _duckdb_scalar_function_set_name(
+      scalar_function,
+      name,
+    );
+  }
+
+  late final _duckdb_scalar_function_set_namePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_scalar_function,
+              ffi.Pointer<ffi.Char>)>>('duckdb_scalar_function_set_name');
+  late final _duckdb_scalar_function_set_name =
+      _duckdb_scalar_function_set_namePtr.asFunction<
+          void Function(duckdb_scalar_function, ffi.Pointer<ffi.Char>)>();
+
+  /// !
+  /// Sets the parameters of the given scalar function to varargs. Does not require adding parameters with
+  /// duckdb_scalar_function_add_parameter.
+  ///
+  /// @param scalar_function The scalar function.
+  /// @param type The type of the arguments.
+  /// @return The parameter type. Cannot contain INVALID.
+  void duckdb_scalar_function_set_varargs(
+    duckdb_scalar_function scalar_function,
+    duckdb_logical_type type,
+  ) {
+    return _duckdb_scalar_function_set_varargs(
+      scalar_function,
+      type,
+    );
+  }
+
+  late final _duckdb_scalar_function_set_varargsPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_scalar_function,
+              duckdb_logical_type)>>('duckdb_scalar_function_set_varargs');
+  late final _duckdb_scalar_function_set_varargs =
+      _duckdb_scalar_function_set_varargsPtr.asFunction<
+          void Function(duckdb_scalar_function, duckdb_logical_type)>();
+
+  /// !
+  /// Sets the parameters of the given scalar function to varargs. Does not require adding parameters with
+  /// duckdb_scalar_function_add_parameter.
+  ///
+  /// @param scalar_function The scalar function.
+  void duckdb_scalar_function_set_special_handling(
+    duckdb_scalar_function scalar_function,
+  ) {
+    return _duckdb_scalar_function_set_special_handling(
+      scalar_function,
+    );
+  }
+
+  late final _duckdb_scalar_function_set_special_handlingPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(duckdb_scalar_function)>>(
+          'duckdb_scalar_function_set_special_handling');
+  late final _duckdb_scalar_function_set_special_handling =
+      _duckdb_scalar_function_set_special_handlingPtr
+          .asFunction<void Function(duckdb_scalar_function)>();
+
+  /// !
+  /// Sets the Function Stability of the scalar function to VOLATILE, indicating the function should be re-run for every row.
+  /// This limits optimization that can be performed for the function.
+  ///
+  /// @param scalar_function The scalar function.
+  void duckdb_scalar_function_set_volatile(
+    duckdb_scalar_function scalar_function,
+  ) {
+    return _duckdb_scalar_function_set_volatile(
+      scalar_function,
+    );
+  }
+
+  late final _duckdb_scalar_function_set_volatilePtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(duckdb_scalar_function)>>(
+          'duckdb_scalar_function_set_volatile');
+  late final _duckdb_scalar_function_set_volatile =
+      _duckdb_scalar_function_set_volatilePtr
+          .asFunction<void Function(duckdb_scalar_function)>();
+
+  /// !
+  /// Adds a parameter to the scalar function.
+  ///
+  /// @param scalar_function The scalar function.
+  /// @param type The parameter type. Cannot contain INVALID.
+  void duckdb_scalar_function_add_parameter(
+    duckdb_scalar_function scalar_function,
+    duckdb_logical_type type,
+  ) {
+    return _duckdb_scalar_function_add_parameter(
+      scalar_function,
+      type,
+    );
+  }
+
+  late final _duckdb_scalar_function_add_parameterPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_scalar_function,
+              duckdb_logical_type)>>('duckdb_scalar_function_add_parameter');
+  late final _duckdb_scalar_function_add_parameter =
+      _duckdb_scalar_function_add_parameterPtr.asFunction<
+          void Function(duckdb_scalar_function, duckdb_logical_type)>();
+
+  /// !
+  /// Sets the return type of the scalar function.
+  ///
+  /// @param scalar_function The scalar function
+  /// @param type Cannot contain INVALID or ANY.
+  void duckdb_scalar_function_set_return_type(
+    duckdb_scalar_function scalar_function,
+    duckdb_logical_type type,
+  ) {
+    return _duckdb_scalar_function_set_return_type(
+      scalar_function,
+      type,
+    );
+  }
+
+  late final _duckdb_scalar_function_set_return_typePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_scalar_function,
+              duckdb_logical_type)>>('duckdb_scalar_function_set_return_type');
+  late final _duckdb_scalar_function_set_return_type =
+      _duckdb_scalar_function_set_return_typePtr.asFunction<
+          void Function(duckdb_scalar_function, duckdb_logical_type)>();
+
+  /// !
+  /// Assigns extra information to the scalar function that can be fetched during binding, etc.
+  ///
+  /// @param scalar_function The scalar function
+  /// @param extra_info The extra information
+  /// @param destroy The callback that will be called to destroy the bind data (if any)
+  void duckdb_scalar_function_set_extra_info(
+    duckdb_scalar_function scalar_function,
+    ffi.Pointer<ffi.Void> extra_info,
+    duckdb_delete_callback_t destroy,
+  ) {
+    return _duckdb_scalar_function_set_extra_info(
+      scalar_function,
+      extra_info,
+      destroy,
+    );
+  }
+
+  late final _duckdb_scalar_function_set_extra_infoPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(duckdb_scalar_function, ffi.Pointer<ffi.Void>,
+                  duckdb_delete_callback_t)>>(
+      'duckdb_scalar_function_set_extra_info');
+  late final _duckdb_scalar_function_set_extra_info =
+      _duckdb_scalar_function_set_extra_infoPtr.asFunction<
+          void Function(duckdb_scalar_function, ffi.Pointer<ffi.Void>,
+              duckdb_delete_callback_t)>();
+
+  /// !
+  /// Sets the main function of the scalar function.
+  ///
+  /// @param scalar_function The scalar function
+  /// @param function The function
+  void duckdb_scalar_function_set_function(
+    duckdb_scalar_function scalar_function,
+    duckdb_scalar_function_t function,
+  ) {
+    return _duckdb_scalar_function_set_function(
+      scalar_function,
+      function,
+    );
+  }
+
+  late final _duckdb_scalar_function_set_functionPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  duckdb_scalar_function, duckdb_scalar_function_t)>>(
+      'duckdb_scalar_function_set_function');
+  late final _duckdb_scalar_function_set_function =
+      _duckdb_scalar_function_set_functionPtr.asFunction<
+          void Function(duckdb_scalar_function, duckdb_scalar_function_t)>();
+
+  /// !
+  /// Register the scalar function object within the given connection.
+  ///
+  /// The function requires at least a name, a function and a return type.
+  ///
+  /// If the function is incomplete or a function with this name already exists DuckDBError is returned.
+  ///
+  /// @param con The connection to register it in.
+  /// @param scalar_function The function pointer
+  /// @return Whether or not the registration was successful.
+  int duckdb_register_scalar_function(
+    duckdb_connection con,
+    duckdb_scalar_function scalar_function,
+  ) {
+    return _duckdb_register_scalar_function(
+      con,
+      scalar_function,
+    );
+  }
+
+  late final _duckdb_register_scalar_functionPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int32 Function(duckdb_connection,
+              duckdb_scalar_function)>>('duckdb_register_scalar_function');
+  late final _duckdb_register_scalar_function =
+      _duckdb_register_scalar_functionPtr.asFunction<
+          int Function(duckdb_connection, duckdb_scalar_function)>();
+
+  /// !
+  /// Retrieves the extra info of the function as set in `duckdb_scalar_function_set_extra_info`.
+  ///
+  /// @param info The info object.
+  /// @return The extra info.
+  ffi.Pointer<ffi.Void> duckdb_scalar_function_get_extra_info(
+    duckdb_function_info info,
+  ) {
+    return _duckdb_scalar_function_get_extra_info(
+      info,
+    );
+  }
+
+  late final _duckdb_scalar_function_get_extra_infoPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Void> Function(
+              duckdb_function_info)>>('duckdb_scalar_function_get_extra_info');
+  late final _duckdb_scalar_function_get_extra_info =
+      _duckdb_scalar_function_get_extra_infoPtr
+          .asFunction<ffi.Pointer<ffi.Void> Function(duckdb_function_info)>();
+
+  /// !
+  /// Report that an error has occurred while executing the scalar function.
+  ///
+  /// @param info The info object.
+  /// @param error The error message
+  void duckdb_scalar_function_set_error(
+    duckdb_function_info info,
+    ffi.Pointer<ffi.Char> error,
+  ) {
+    return _duckdb_scalar_function_set_error(
+      info,
+      error,
+    );
+  }
+
+  late final _duckdb_scalar_function_set_errorPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_function_info,
+              ffi.Pointer<ffi.Char>)>>('duckdb_scalar_function_set_error');
+  late final _duckdb_scalar_function_set_error =
+      _duckdb_scalar_function_set_errorPtr.asFunction<
+          void Function(duckdb_function_info, ffi.Pointer<ffi.Char>)>();
+
+  /// !
+  /// Creates a new empty scalar function set.
+  ///
+  /// The return value should be destroyed with `duckdb_destroy_scalar_function_set`.
+  ///
+  /// @return The scalar function set object.
+  duckdb_scalar_function_set duckdb_create_scalar_function_set(
+    ffi.Pointer<ffi.Char> name,
+  ) {
+    return _duckdb_create_scalar_function_set(
+      name,
+    );
+  }
+
+  late final _duckdb_create_scalar_function_setPtr = _lookup<
+      ffi.NativeFunction<
+          duckdb_scalar_function_set Function(
+              ffi.Pointer<ffi.Char>)>>('duckdb_create_scalar_function_set');
+  late final _duckdb_create_scalar_function_set =
+      _duckdb_create_scalar_function_setPtr.asFunction<
+          duckdb_scalar_function_set Function(ffi.Pointer<ffi.Char>)>();
+
+  /// !
+  /// Destroys the given scalar function set object.
+  void duckdb_destroy_scalar_function_set(
+    ffi.Pointer<duckdb_scalar_function_set> scalar_function_set,
+  ) {
+    return _duckdb_destroy_scalar_function_set(
+      scalar_function_set,
+    );
+  }
+
+  late final _duckdb_destroy_scalar_function_setPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Pointer<duckdb_scalar_function_set>)>>(
+      'duckdb_destroy_scalar_function_set');
+  late final _duckdb_destroy_scalar_function_set =
+      _duckdb_destroy_scalar_function_setPtr
+          .asFunction<void Function(ffi.Pointer<duckdb_scalar_function_set>)>();
+
+  /// !
+  /// Adds the scalar function as a new overload to the scalar function set.
+  ///
+  /// Returns DuckDBError if the function could not be added, for example if the overload already exists.
+  ///
+  /// @param set The scalar function set
+  /// @param function The function to add
+  int duckdb_add_scalar_function_to_set(
+    duckdb_scalar_function_set set1,
+    duckdb_scalar_function function,
+  ) {
+    return _duckdb_add_scalar_function_to_set(
+      set1,
+      function,
+    );
+  }
+
+  late final _duckdb_add_scalar_function_to_setPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int32 Function(duckdb_scalar_function_set,
+              duckdb_scalar_function)>>('duckdb_add_scalar_function_to_set');
+  late final _duckdb_add_scalar_function_to_set =
+      _duckdb_add_scalar_function_to_setPtr.asFunction<
+          int Function(duckdb_scalar_function_set, duckdb_scalar_function)>();
+
+  /// !
+  /// Register the scalar function set within the given connection.
+  ///
+  /// The set requires at least a single valid overload.
+  ///
+  /// If the set is incomplete or a function with this name already exists DuckDBError is returned.
+  ///
+  /// @param con The connection to register it in.
+  /// @param set The function set to register
+  /// @return Whether or not the registration was successful.
+  int duckdb_register_scalar_function_set(
+    duckdb_connection con,
+    duckdb_scalar_function_set set1,
+  ) {
+    return _duckdb_register_scalar_function_set(
+      con,
+      set1,
+    );
+  }
+
+  late final _duckdb_register_scalar_function_setPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Int32 Function(
+                  duckdb_connection, duckdb_scalar_function_set)>>(
+      'duckdb_register_scalar_function_set');
+  late final _duckdb_register_scalar_function_set =
+      _duckdb_register_scalar_function_setPtr.asFunction<
+          int Function(duckdb_connection, duckdb_scalar_function_set)>();
+
+  /// !
+  /// Creates a new empty aggregate function.
+  ///
+  /// The return value should be destroyed with `duckdb_destroy_aggregate_function`.
+  ///
+  /// @return The aggregate function object.
+  duckdb_aggregate_function duckdb_create_aggregate_function() {
+    return _duckdb_create_aggregate_function();
+  }
+
+  late final _duckdb_create_aggregate_functionPtr =
+      _lookup<ffi.NativeFunction<duckdb_aggregate_function Function()>>(
+          'duckdb_create_aggregate_function');
+  late final _duckdb_create_aggregate_function =
+      _duckdb_create_aggregate_functionPtr
+          .asFunction<duckdb_aggregate_function Function()>();
+
+  /// !
+  /// Destroys the given aggregate function object.
+  void duckdb_destroy_aggregate_function(
+    ffi.Pointer<duckdb_aggregate_function> aggregate_function,
+  ) {
+    return _duckdb_destroy_aggregate_function(
+      aggregate_function,
+    );
+  }
+
+  late final _duckdb_destroy_aggregate_functionPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Pointer<duckdb_aggregate_function>)>>(
+      'duckdb_destroy_aggregate_function');
+  late final _duckdb_destroy_aggregate_function =
+      _duckdb_destroy_aggregate_functionPtr
+          .asFunction<void Function(ffi.Pointer<duckdb_aggregate_function>)>();
+
+  /// !
+  /// Sets the name of the given aggregate function.
+  ///
+  /// @param aggregate_function The aggregate function
+  /// @param name The name of the aggregate function
+  void duckdb_aggregate_function_set_name(
+    duckdb_aggregate_function aggregate_function,
+    ffi.Pointer<ffi.Char> name,
+  ) {
+    return _duckdb_aggregate_function_set_name(
+      aggregate_function,
+      name,
+    );
+  }
+
+  late final _duckdb_aggregate_function_set_namePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_aggregate_function,
+              ffi.Pointer<ffi.Char>)>>('duckdb_aggregate_function_set_name');
+  late final _duckdb_aggregate_function_set_name =
+      _duckdb_aggregate_function_set_namePtr.asFunction<
+          void Function(duckdb_aggregate_function, ffi.Pointer<ffi.Char>)>();
+
+  /// !
+  /// Adds a parameter to the aggregate function.
+  ///
+  /// @param aggregate_function The aggregate function.
+  /// @param type The parameter type. Cannot contain INVALID.
+  void duckdb_aggregate_function_add_parameter(
+    duckdb_aggregate_function aggregate_function,
+    duckdb_logical_type type,
+  ) {
+    return _duckdb_aggregate_function_add_parameter(
+      aggregate_function,
+      type,
+    );
+  }
+
+  late final _duckdb_aggregate_function_add_parameterPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_aggregate_function,
+              duckdb_logical_type)>>('duckdb_aggregate_function_add_parameter');
+  late final _duckdb_aggregate_function_add_parameter =
+      _duckdb_aggregate_function_add_parameterPtr.asFunction<
+          void Function(duckdb_aggregate_function, duckdb_logical_type)>();
+
+  /// !
+  /// Sets the return type of the aggregate function.
+  ///
+  /// @param aggregate_function The aggregate function.
+  /// @param type The return type. Cannot contain INVALID or ANY.
+  void duckdb_aggregate_function_set_return_type(
+    duckdb_aggregate_function aggregate_function,
+    duckdb_logical_type type,
+  ) {
+    return _duckdb_aggregate_function_set_return_type(
+      aggregate_function,
+      type,
+    );
+  }
+
+  late final _duckdb_aggregate_function_set_return_typePtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  duckdb_aggregate_function, duckdb_logical_type)>>(
+      'duckdb_aggregate_function_set_return_type');
+  late final _duckdb_aggregate_function_set_return_type =
+      _duckdb_aggregate_function_set_return_typePtr.asFunction<
+          void Function(duckdb_aggregate_function, duckdb_logical_type)>();
+
+  /// !
+  /// Sets the main functions of the aggregate function.
+  ///
+  /// @param aggregate_function The aggregate function
+  /// @param state_size state size
+  /// @param state_init state init function
+  /// @param update update states
+  /// @param combine combine states
+  /// @param finalize finalize states
+  void duckdb_aggregate_function_set_functions(
+    duckdb_aggregate_function aggregate_function,
+    duckdb_aggregate_state_size state_size,
+    duckdb_aggregate_init_t state_init,
+    duckdb_aggregate_update_t update,
+    duckdb_aggregate_combine_t combine,
+    duckdb_aggregate_finalize_t finalize,
+  ) {
+    return _duckdb_aggregate_function_set_functions(
+      aggregate_function,
+      state_size,
+      state_init,
+      update,
+      combine,
+      finalize,
+    );
+  }
+
+  late final _duckdb_aggregate_function_set_functionsPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  duckdb_aggregate_function,
+                  duckdb_aggregate_state_size,
+                  duckdb_aggregate_init_t,
+                  duckdb_aggregate_update_t,
+                  duckdb_aggregate_combine_t,
+                  duckdb_aggregate_finalize_t)>>(
+      'duckdb_aggregate_function_set_functions');
+  late final _duckdb_aggregate_function_set_functions =
+      _duckdb_aggregate_function_set_functionsPtr.asFunction<
+          void Function(
+              duckdb_aggregate_function,
+              duckdb_aggregate_state_size,
+              duckdb_aggregate_init_t,
+              duckdb_aggregate_update_t,
+              duckdb_aggregate_combine_t,
+              duckdb_aggregate_finalize_t)>();
+
+  /// !
+  /// Sets the state destructor callback of the aggregate function (optional)
+  ///
+  /// @param aggregate_function The aggregate function
+  /// @param destroy state destroy callback
+  void duckdb_aggregate_function_set_destructor(
+    duckdb_aggregate_function aggregate_function,
+    duckdb_aggregate_destroy_t destroy,
+  ) {
+    return _duckdb_aggregate_function_set_destructor(
+      aggregate_function,
+      destroy,
+    );
+  }
+
+  late final _duckdb_aggregate_function_set_destructorPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  duckdb_aggregate_function, duckdb_aggregate_destroy_t)>>(
+      'duckdb_aggregate_function_set_destructor');
+  late final _duckdb_aggregate_function_set_destructor =
+      _duckdb_aggregate_function_set_destructorPtr.asFunction<
+          void Function(
+              duckdb_aggregate_function, duckdb_aggregate_destroy_t)>();
+
+  /// !
+  /// Register the aggregate function object within the given connection.
+  ///
+  /// The function requires at least a name, functions and a return type.
+  ///
+  /// If the function is incomplete or a function with this name already exists DuckDBError is returned.
+  ///
+  /// @param con The connection to register it in.
+  /// @return Whether or not the registration was successful.
+  int duckdb_register_aggregate_function(
+    duckdb_connection con,
+    duckdb_aggregate_function aggregate_function,
+  ) {
+    return _duckdb_register_aggregate_function(
+      con,
+      aggregate_function,
+    );
+  }
+
+  late final _duckdb_register_aggregate_functionPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Int32 Function(
+                  duckdb_connection, duckdb_aggregate_function)>>(
+      'duckdb_register_aggregate_function');
+  late final _duckdb_register_aggregate_function =
+      _duckdb_register_aggregate_functionPtr.asFunction<
+          int Function(duckdb_connection, duckdb_aggregate_function)>();
+
+  /// !
+  /// Sets the NULL handling of the aggregate function to SPECIAL_HANDLING.
+  ///
+  /// @param aggregate_function The aggregate function
+  void duckdb_aggregate_function_set_special_handling(
+    duckdb_aggregate_function aggregate_function,
+  ) {
+    return _duckdb_aggregate_function_set_special_handling(
+      aggregate_function,
+    );
+  }
+
+  late final _duckdb_aggregate_function_set_special_handlingPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(duckdb_aggregate_function)>>(
+          'duckdb_aggregate_function_set_special_handling');
+  late final _duckdb_aggregate_function_set_special_handling =
+      _duckdb_aggregate_function_set_special_handlingPtr
+          .asFunction<void Function(duckdb_aggregate_function)>();
+
+  /// !
+  /// Assigns extra information to the scalar function that can be fetched during binding, etc.
+  ///
+  /// @param aggregate_function The aggregate function
+  /// @param extra_info The extra information
+  /// @param destroy The callback that will be called to destroy the bind data (if any)
+  void duckdb_aggregate_function_set_extra_info(
+    duckdb_aggregate_function aggregate_function,
+    ffi.Pointer<ffi.Void> extra_info,
+    duckdb_delete_callback_t destroy,
+  ) {
+    return _duckdb_aggregate_function_set_extra_info(
+      aggregate_function,
+      extra_info,
+      destroy,
+    );
+  }
+
+  late final _duckdb_aggregate_function_set_extra_infoPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(duckdb_aggregate_function,
+                  ffi.Pointer<ffi.Void>, duckdb_delete_callback_t)>>(
+      'duckdb_aggregate_function_set_extra_info');
+  late final _duckdb_aggregate_function_set_extra_info =
+      _duckdb_aggregate_function_set_extra_infoPtr.asFunction<
+          void Function(duckdb_aggregate_function, ffi.Pointer<ffi.Void>,
+              duckdb_delete_callback_t)>();
+
+  /// !
+  /// Retrieves the extra info of the function as set in `duckdb_aggregate_function_set_extra_info`.
+  ///
+  /// @param info The info object
+  /// @return The extra info
+  ffi.Pointer<ffi.Void> duckdb_aggregate_function_get_extra_info(
+    duckdb_function_info info,
+  ) {
+    return _duckdb_aggregate_function_get_extra_info(
+      info,
+    );
+  }
+
+  late final _duckdb_aggregate_function_get_extra_infoPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Pointer<ffi.Void> Function(duckdb_function_info)>>(
+      'duckdb_aggregate_function_get_extra_info');
+  late final _duckdb_aggregate_function_get_extra_info =
+      _duckdb_aggregate_function_get_extra_infoPtr
+          .asFunction<ffi.Pointer<ffi.Void> Function(duckdb_function_info)>();
+
+  /// !
+  /// Report that an error has occurred while executing the aggregate function.
+  ///
+  /// @param info The info object
+  /// @param error The error message
+  void duckdb_aggregate_function_set_error(
+    duckdb_function_info info,
+    ffi.Pointer<ffi.Char> error,
+  ) {
+    return _duckdb_aggregate_function_set_error(
+      info,
+      error,
+    );
+  }
+
+  late final _duckdb_aggregate_function_set_errorPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_function_info,
+              ffi.Pointer<ffi.Char>)>>('duckdb_aggregate_function_set_error');
+  late final _duckdb_aggregate_function_set_error =
+      _duckdb_aggregate_function_set_errorPtr.asFunction<
+          void Function(duckdb_function_info, ffi.Pointer<ffi.Char>)>();
+
+  /// !
+  /// Creates a new empty aggregate function set.
+  ///
+  /// The return value should be destroyed with `duckdb_destroy_aggregate_function_set`.
+  ///
+  /// @return The aggregate function set object.
+  duckdb_aggregate_function_set duckdb_create_aggregate_function_set(
+    ffi.Pointer<ffi.Char> name,
+  ) {
+    return _duckdb_create_aggregate_function_set(
+      name,
+    );
+  }
+
+  late final _duckdb_create_aggregate_function_setPtr = _lookup<
+      ffi.NativeFunction<
+          duckdb_aggregate_function_set Function(
+              ffi.Pointer<ffi.Char>)>>('duckdb_create_aggregate_function_set');
+  late final _duckdb_create_aggregate_function_set =
+      _duckdb_create_aggregate_function_setPtr.asFunction<
+          duckdb_aggregate_function_set Function(ffi.Pointer<ffi.Char>)>();
+
+  /// !
+  /// Destroys the given aggregate function set object.
+  void duckdb_destroy_aggregate_function_set(
+    ffi.Pointer<duckdb_aggregate_function_set> aggregate_function_set,
+  ) {
+    return _duckdb_destroy_aggregate_function_set(
+      aggregate_function_set,
+    );
+  }
+
+  late final _duckdb_destroy_aggregate_function_setPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Pointer<duckdb_aggregate_function_set>)>>(
+      'duckdb_destroy_aggregate_function_set');
+  late final _duckdb_destroy_aggregate_function_set =
+      _duckdb_destroy_aggregate_function_setPtr.asFunction<
+          void Function(ffi.Pointer<duckdb_aggregate_function_set>)>();
+
+  /// !
+  /// Adds the aggregate function as a new overload to the aggregate function set.
+  ///
+  /// Returns DuckDBError if the function could not be added, for example if the overload already exists.
+  ///
+  /// @param set The aggregate function set
+  /// @param function The function to add
+  int duckdb_add_aggregate_function_to_set(
+    duckdb_aggregate_function_set set1,
+    duckdb_aggregate_function function,
+  ) {
+    return _duckdb_add_aggregate_function_to_set(
+      set1,
+      function,
+    );
+  }
+
+  late final _duckdb_add_aggregate_function_to_setPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Int32 Function(
+                  duckdb_aggregate_function_set, duckdb_aggregate_function)>>(
+      'duckdb_add_aggregate_function_to_set');
+  late final _duckdb_add_aggregate_function_to_set =
+      _duckdb_add_aggregate_function_to_setPtr.asFunction<
+          int Function(
+              duckdb_aggregate_function_set, duckdb_aggregate_function)>();
+
+  /// !
+  /// Register the aggregate function set within the given connection.
+  ///
+  /// The set requires at least a single valid overload.
+  ///
+  /// If the set is incomplete or a function with this name already exists DuckDBError is returned.
+  ///
+  /// @param con The connection to register it in.
+  /// @param set The function set to register
+  /// @return Whether or not the registration was successful.
+  int duckdb_register_aggregate_function_set(
+    duckdb_connection con,
+    duckdb_aggregate_function_set set1,
+  ) {
+    return _duckdb_register_aggregate_function_set(
+      con,
+      set1,
+    );
+  }
+
+  late final _duckdb_register_aggregate_function_setPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Int32 Function(
+                  duckdb_connection, duckdb_aggregate_function_set)>>(
+      'duckdb_register_aggregate_function_set');
+  late final _duckdb_register_aggregate_function_set =
+      _duckdb_register_aggregate_function_setPtr.asFunction<
+          int Function(duckdb_connection, duckdb_aggregate_function_set)>();
+
+  /// !
   /// Creates a new empty table function.
   ///
   /// The return value should be destroyed with `duckdb_destroy_table_function`.
   ///
-  /// returns: The table function object.
+  /// @return The table function object.
   duckdb_table_function duckdb_create_table_function() {
     return _duckdb_create_table_function();
   }
@@ -4108,7 +5802,7 @@ class Bindings {
   /// !
   /// Destroys the given table function object.
   ///
-  /// table_function: The table function to destroy
+  /// @param table_function The table function to destroy
   void duckdb_destroy_table_function(
     ffi.Pointer<duckdb_table_function> table_function,
   ) {
@@ -4127,8 +5821,8 @@ class Bindings {
   /// !
   /// Sets the name of the given table function.
   ///
-  /// table_function: The table function
-  /// name: The name of the table function
+  /// @param table_function The table function
+  /// @param name The name of the table function
   void duckdb_table_function_set_name(
     duckdb_table_function table_function,
     ffi.Pointer<ffi.Char> name,
@@ -4150,8 +5844,8 @@ class Bindings {
   /// !
   /// Adds a parameter to the table function.
   ///
-  /// table_function: The table function
-  /// type: The type of the parameter to add.
+  /// @param table_function The table function.
+  /// @param type The parameter type. Cannot contain INVALID.
   void duckdb_table_function_add_parameter(
     duckdb_table_function table_function,
     duckdb_logical_type type,
@@ -4173,9 +5867,9 @@ class Bindings {
   /// !
   /// Adds a named parameter to the table function.
   ///
-  /// table_function: The table function
-  /// name: The name of the parameter
-  /// type: The type of the parameter to add.
+  /// @param table_function The table function.
+  /// @param name The parameter name.
+  /// @param type The parameter type. Cannot contain INVALID.
   void duckdb_table_function_add_named_parameter(
     duckdb_table_function table_function,
     ffi.Pointer<ffi.Char> name,
@@ -4201,9 +5895,9 @@ class Bindings {
   /// !
   /// Assigns extra information to the table function that can be fetched during binding, etc.
   ///
-  /// table_function: The table function
-  /// extra_info: The extra information
-  /// destroy: The callback that will be called to destroy the bind data (if any)
+  /// @param table_function The table function
+  /// @param extra_info The extra information
+  /// @param destroy The callback that will be called to destroy the bind data (if any)
   void duckdb_table_function_set_extra_info(
     duckdb_table_function table_function,
     ffi.Pointer<ffi.Void> extra_info,
@@ -4229,8 +5923,8 @@ class Bindings {
   /// !
   /// Sets the bind function of the table function.
   ///
-  /// table_function: The table function
-  /// bind: The bind function
+  /// @param table_function The table function
+  /// @param bind The bind function
   void duckdb_table_function_set_bind(
     duckdb_table_function table_function,
     duckdb_table_function_bind_t bind,
@@ -4252,8 +5946,8 @@ class Bindings {
   /// !
   /// Sets the init function of the table function.
   ///
-  /// table_function: The table function
-  /// init: The init function
+  /// @param table_function The table function
+  /// @param init The init function
   void duckdb_table_function_set_init(
     duckdb_table_function table_function,
     duckdb_table_function_init_t init,
@@ -4275,8 +5969,8 @@ class Bindings {
   /// !
   /// Sets the thread-local init function of the table function.
   ///
-  /// table_function: The table function
-  /// init: The init function
+  /// @param table_function The table function
+  /// @param init The init function
   void duckdb_table_function_set_local_init(
     duckdb_table_function table_function,
     duckdb_table_function_init_t init,
@@ -4299,8 +5993,8 @@ class Bindings {
   /// !
   /// Sets the main function of the table function.
   ///
-  /// table_function: The table function
-  /// function: The function
+  /// @param table_function The table function
+  /// @param function The function
   void duckdb_table_function_set_function(
     duckdb_table_function table_function,
     duckdb_table_function_t function,
@@ -4326,8 +6020,8 @@ class Bindings {
   /// the `duckdb_init_get_column_count` and `duckdb_init_get_column_index` functions.
   /// If this is set to false (the default), the system will expect all columns to be projected.
   ///
-  /// table_function: The table function
-  /// pushdown: True if the table function supports projection pushdown, false otherwise.
+  /// @param table_function The table function
+  /// @param pushdown True if the table function supports projection pushdown, false otherwise.
   void duckdb_table_function_supports_projection_pushdown(
     duckdb_table_function table_function,
     bool pushdown,
@@ -4353,9 +6047,9 @@ class Bindings {
   ///
   /// If the function is incomplete or a function with this name already exists DuckDBError is returned.
   ///
-  /// con: The connection to register it in.
-  /// function: The function pointer
-  /// returns: Whether or not the registration was successful.
+  /// @param con The connection to register it in.
+  /// @param function The function pointer
+  /// @return Whether or not the registration was successful.
   int duckdb_register_table_function(
     duckdb_connection con,
     duckdb_table_function function,
@@ -4377,8 +6071,8 @@ class Bindings {
   /// !
   /// Retrieves the extra info of the function as set in `duckdb_table_function_set_extra_info`.
   ///
-  /// info: The info object
-  /// returns: The extra info
+  /// @param info The info object
+  /// @return The extra info
   ffi.Pointer<ffi.Void> duckdb_bind_get_extra_info(
     duckdb_bind_info info,
   ) {
@@ -4396,9 +6090,9 @@ class Bindings {
   /// !
   /// Adds a result column to the output of the table function.
   ///
-  /// info: The info object
-  /// name: The name of the column
-  /// type: The logical type of the column
+  /// @param info The table function's bind info.
+  /// @param name The column name.
+  /// @param type The logical column type.
   void duckdb_bind_add_result_column(
     duckdb_bind_info info,
     ffi.Pointer<ffi.Char> name,
@@ -4423,8 +6117,8 @@ class Bindings {
   /// !
   /// Retrieves the number of regular (non-named) parameters to the function.
   ///
-  /// info: The info object
-  /// returns: The number of parameters
+  /// @param info The info object
+  /// @return The number of parameters
   int duckdb_bind_get_parameter_count(
     duckdb_bind_info info,
   ) {
@@ -4445,9 +6139,9 @@ class Bindings {
   ///
   /// The result must be destroyed with `duckdb_destroy_value`.
   ///
-  /// info: The info object
-  /// index: The index of the parameter to get
-  /// returns: The value of the parameter. Must be destroyed with `duckdb_destroy_value`.
+  /// @param info The info object
+  /// @param index The index of the parameter to get
+  /// @return The value of the parameter. Must be destroyed with `duckdb_destroy_value`.
   duckdb_value duckdb_bind_get_parameter(
     duckdb_bind_info info,
     int index,
@@ -4469,9 +6163,9 @@ class Bindings {
   ///
   /// The result must be destroyed with `duckdb_destroy_value`.
   ///
-  /// info: The info object
-  /// name: The name of the parameter
-  /// returns: The value of the parameter. Must be destroyed with `duckdb_destroy_value`.
+  /// @param info The info object
+  /// @param name The name of the parameter
+  /// @return The value of the parameter. Must be destroyed with `duckdb_destroy_value`.
   duckdb_value duckdb_bind_get_named_parameter(
     duckdb_bind_info info,
     ffi.Pointer<ffi.Char> name,
@@ -4493,9 +6187,9 @@ class Bindings {
   /// !
   /// Sets the user-provided bind data in the bind object. This object can be retrieved again during execution.
   ///
-  /// info: The info object
-  /// extra_data: The bind data object.
-  /// destroy: The callback that will be called to destroy the bind data (if any)
+  /// @param info The info object
+  /// @param bind_data The bind data object.
+  /// @param destroy The callback that will be called to destroy the bind data (if any)
   void duckdb_bind_set_bind_data(
     duckdb_bind_info info,
     ffi.Pointer<ffi.Void> bind_data,
@@ -4520,8 +6214,8 @@ class Bindings {
   /// !
   /// Sets the cardinality estimate for the table function, used for optimization.
   ///
-  /// info: The bind data object.
-  /// is_exact: Whether or not the cardinality estimate is exact, or an approximation
+  /// @param info The bind data object.
+  /// @param is_exact Whether or not the cardinality estimate is exact, or an approximation
   void duckdb_bind_set_cardinality(
     duckdb_bind_info info,
     int cardinality,
@@ -4544,8 +6238,8 @@ class Bindings {
   /// !
   /// Report that an error has occurred while calling bind.
   ///
-  /// info: The info object
-  /// error: The error message
+  /// @param info The info object
+  /// @param error The error message
   void duckdb_bind_set_error(
     duckdb_bind_info info,
     ffi.Pointer<ffi.Char> error,
@@ -4566,8 +6260,8 @@ class Bindings {
   /// !
   /// Retrieves the extra info of the function as set in `duckdb_table_function_set_extra_info`.
   ///
-  /// info: The info object
-  /// returns: The extra info
+  /// @param info The info object
+  /// @return The extra info
   ffi.Pointer<ffi.Void> duckdb_init_get_extra_info(
     duckdb_init_info info,
   ) {
@@ -4588,8 +6282,8 @@ class Bindings {
   /// Note that the bind data should be considered as read-only.
   /// For tracking state, use the init data instead.
   ///
-  /// info: The info object
-  /// returns: The bind data object
+  /// @param info The info object
+  /// @return The bind data object
   ffi.Pointer<ffi.Void> duckdb_init_get_bind_data(
     duckdb_init_info info,
   ) {
@@ -4607,9 +6301,9 @@ class Bindings {
   /// !
   /// Sets the user-provided init data in the init object. This object can be retrieved again during execution.
   ///
-  /// info: The info object
-  /// extra_data: The init data object.
-  /// destroy: The callback that will be called to destroy the init data (if any)
+  /// @param info The info object
+  /// @param init_data The init data object.
+  /// @param destroy The callback that will be called to destroy the init data (if any)
   void duckdb_init_set_init_data(
     duckdb_init_info info,
     ffi.Pointer<ffi.Void> init_data,
@@ -4636,8 +6330,8 @@ class Bindings {
   ///
   /// This function must be used if projection pushdown is enabled to figure out which columns to emit.
   ///
-  /// info: The info object
-  /// returns: The number of projected columns.
+  /// @param info The info object
+  /// @return The number of projected columns.
   int duckdb_init_get_column_count(
     duckdb_init_info info,
   ) {
@@ -4657,9 +6351,9 @@ class Bindings {
   ///
   /// This function must be used if projection pushdown is enabled to figure out which columns to emit.
   ///
-  /// info: The info object
-  /// column_index: The index at which to get the projected column index, from 0..duckdb_init_get_column_count(info)
-  /// returns: The column index of the projected column.
+  /// @param info The info object
+  /// @param column_index The index at which to get the projected column index, from 0..duckdb_init_get_column_count(info)
+  /// @return The column index of the projected column.
   int duckdb_init_get_column_index(
     duckdb_init_info info,
     int column_index,
@@ -4679,8 +6373,8 @@ class Bindings {
   /// !
   /// Sets how many threads can process this table function in parallel (default: 1)
   ///
-  /// info: The info object
-  /// max_threads: The maximum amount of threads that can process this table function
+  /// @param info The info object
+  /// @param max_threads The maximum amount of threads that can process this table function
   void duckdb_init_set_max_threads(
     duckdb_init_info info,
     int max_threads,
@@ -4700,8 +6394,8 @@ class Bindings {
   /// !
   /// Report that an error has occurred while calling init.
   ///
-  /// info: The info object
-  /// error: The error message
+  /// @param info The info object
+  /// @param error The error message
   void duckdb_init_set_error(
     duckdb_init_info info,
     ffi.Pointer<ffi.Char> error,
@@ -4722,8 +6416,8 @@ class Bindings {
   /// !
   /// Retrieves the extra info of the function as set in `duckdb_table_function_set_extra_info`.
   ///
-  /// info: The info object
-  /// returns: The extra info
+  /// @param info The info object
+  /// @return The extra info
   ffi.Pointer<ffi.Void> duckdb_function_get_extra_info(
     duckdb_function_info info,
   ) {
@@ -4746,8 +6440,8 @@ class Bindings {
   /// Note that the bind data should be considered as read-only.
   /// For tracking state, use the init data instead.
   ///
-  /// info: The info object
-  /// returns: The bind data object
+  /// @param info The info object
+  /// @return The bind data object
   ffi.Pointer<ffi.Void> duckdb_function_get_bind_data(
     duckdb_function_info info,
   ) {
@@ -4766,8 +6460,8 @@ class Bindings {
   /// !
   /// Gets the init data set by `duckdb_init_set_init_data` during the init.
   ///
-  /// info: The info object
-  /// returns: The init data object
+  /// @param info The info object
+  /// @return The init data object
   ffi.Pointer<ffi.Void> duckdb_function_get_init_data(
     duckdb_function_info info,
   ) {
@@ -4786,8 +6480,8 @@ class Bindings {
   /// !
   /// Gets the thread-local init data set by `duckdb_init_set_init_data` during the local_init.
   ///
-  /// info: The info object
-  /// returns: The init data object
+  /// @param info The info object
+  /// @return The init data object
   ffi.Pointer<ffi.Void> duckdb_function_get_local_init_data(
     duckdb_function_info info,
   ) {
@@ -4807,8 +6501,8 @@ class Bindings {
   /// !
   /// Report that an error has occurred while executing the function.
   ///
-  /// info: The info object
-  /// error: The error message
+  /// @param info The info object
+  /// @param error The error message
   void duckdb_function_set_error(
     duckdb_function_info info,
     ffi.Pointer<ffi.Char> error,
@@ -4829,10 +6523,10 @@ class Bindings {
   /// !
   /// Add a replacement scan definition to the specified database.
   ///
-  /// db: The database object to add the replacement scan to
-  /// replacement: The replacement scan callback
-  /// extra_data: Extra data that is passed back into the specified callback
-  /// delete_callback: The delete callback to call on the extra data, if any
+  /// @param db The database object to add the replacement scan to
+  /// @param replacement The replacement scan callback
+  /// @param extra_data Extra data that is passed back into the specified callback
+  /// @param delete_callback The delete callback to call on the extra data, if any
   void duckdb_add_replacement_scan(
     duckdb_database db,
     duckdb_replacement_callback_t replacement,
@@ -4863,8 +6557,8 @@ class Bindings {
   /// Sets the replacement function name. If this function is called in the replacement callback,
   /// the replacement scan is performed. If it is not called, the replacement callback is not performed.
   ///
-  /// info: The info object
-  /// function_name: The function name to substitute.
+  /// @param info The info object
+  /// @param function_name The function name to substitute.
   void duckdb_replacement_scan_set_function_name(
     duckdb_replacement_scan_info info,
     ffi.Pointer<ffi.Char> function_name,
@@ -4887,8 +6581,8 @@ class Bindings {
   /// !
   /// Adds a parameter to the replacement scan function.
   ///
-  /// info: The info object
-  /// parameter: The parameter to add.
+  /// @param info The info object
+  /// @param parameter The parameter to add.
   void duckdb_replacement_scan_add_parameter(
     duckdb_replacement_scan_info info,
     duckdb_value parameter,
@@ -4910,8 +6604,8 @@ class Bindings {
   /// !
   /// Report that an error has occurred while executing the replacement scan.
   ///
-  /// info: The info object
-  /// error: The error message
+  /// @param info The info object
+  /// @param error The error message
   void duckdb_replacement_scan_set_error(
     duckdb_replacement_scan_info info,
     ffi.Pointer<ffi.Char> error,
@@ -4931,15 +6625,127 @@ class Bindings {
           void Function(duckdb_replacement_scan_info, ffi.Pointer<ffi.Char>)>();
 
   /// !
+  /// Returns the root node of the profiling information. Returns nullptr, if profiling is not enabled.
+  ///
+  /// @param connection A connection object.
+  /// @return A profiling information object.
+  duckdb_profiling_info duckdb_get_profiling_info(
+    duckdb_connection connection,
+  ) {
+    return _duckdb_get_profiling_info(
+      connection,
+    );
+  }
+
+  late final _duckdb_get_profiling_infoPtr = _lookup<
+          ffi
+          .NativeFunction<duckdb_profiling_info Function(duckdb_connection)>>(
+      'duckdb_get_profiling_info');
+  late final _duckdb_get_profiling_info = _duckdb_get_profiling_infoPtr
+      .asFunction<duckdb_profiling_info Function(duckdb_connection)>();
+
+  /// !
+  /// Returns the value of the metric of the current profiling info node. Returns nullptr, if the metric does
+  /// not exist or is not enabled. Currently, the value holds a string, and you can retrieve the string
+  /// by calling the corresponding function: char *duckdb_get_varchar(duckdb_value value).
+  ///
+  /// @param info A profiling information object.
+  /// @param key The name of the requested metric.
+  /// @return The value of the metric. Must be freed with `duckdb_destroy_value`
+  duckdb_value duckdb_profiling_info_get_value(
+    duckdb_profiling_info info,
+    ffi.Pointer<ffi.Char> key,
+  ) {
+    return _duckdb_profiling_info_get_value(
+      info,
+      key,
+    );
+  }
+
+  late final _duckdb_profiling_info_get_valuePtr = _lookup<
+      ffi.NativeFunction<
+          duckdb_value Function(duckdb_profiling_info,
+              ffi.Pointer<ffi.Char>)>>('duckdb_profiling_info_get_value');
+  late final _duckdb_profiling_info_get_value =
+      _duckdb_profiling_info_get_valuePtr.asFunction<
+          duckdb_value Function(
+              duckdb_profiling_info, ffi.Pointer<ffi.Char>)>();
+
+  /// !
+  /// Returns the key-value metric map of this profiling node as a MAP duckdb_value.
+  /// The individual elements are accessible via the duckdb_value MAP functions.
+  ///
+  /// @param info A profiling information object.
+  /// @return The key-value metric map as a MAP duckdb_value.
+  duckdb_value duckdb_profiling_info_get_metrics(
+    duckdb_profiling_info info,
+  ) {
+    return _duckdb_profiling_info_get_metrics(
+      info,
+    );
+  }
+
+  late final _duckdb_profiling_info_get_metricsPtr =
+      _lookup<ffi.NativeFunction<duckdb_value Function(duckdb_profiling_info)>>(
+          'duckdb_profiling_info_get_metrics');
+  late final _duckdb_profiling_info_get_metrics =
+      _duckdb_profiling_info_get_metricsPtr
+          .asFunction<duckdb_value Function(duckdb_profiling_info)>();
+
+  /// !
+  /// Returns the number of children in the current profiling info node.
+  ///
+  /// @param info A profiling information object.
+  /// @return The number of children in the current node.
+  int duckdb_profiling_info_get_child_count(
+    duckdb_profiling_info info,
+  ) {
+    return _duckdb_profiling_info_get_child_count(
+      info,
+    );
+  }
+
+  late final _duckdb_profiling_info_get_child_countPtr =
+      _lookup<ffi.NativeFunction<idx_t Function(duckdb_profiling_info)>>(
+          'duckdb_profiling_info_get_child_count');
+  late final _duckdb_profiling_info_get_child_count =
+      _duckdb_profiling_info_get_child_countPtr
+          .asFunction<int Function(duckdb_profiling_info)>();
+
+  /// !
+  /// Returns the child node at the specified index.
+  ///
+  /// @param info A profiling information object.
+  /// @param index The index of the child node.
+  /// @return The child node at the specified index.
+  duckdb_profiling_info duckdb_profiling_info_get_child(
+    duckdb_profiling_info info,
+    int index,
+  ) {
+    return _duckdb_profiling_info_get_child(
+      info,
+      index,
+    );
+  }
+
+  late final _duckdb_profiling_info_get_childPtr = _lookup<
+      ffi.NativeFunction<
+          duckdb_profiling_info Function(duckdb_profiling_info,
+              idx_t)>>('duckdb_profiling_info_get_child');
+  late final _duckdb_profiling_info_get_child =
+      _duckdb_profiling_info_get_childPtr.asFunction<
+          duckdb_profiling_info Function(duckdb_profiling_info, int)>();
+
+  /// !
   /// Creates an appender object.
   ///
   /// Note that the object must be destroyed with `duckdb_appender_destroy`.
   ///
-  /// connection: The connection context to create the appender in.
-  /// schema: The schema of the table to append to, or `nullptr` for the default schema.
-  /// table: The table name to append to.
-  /// out_appender: The resulting appender object.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param connection The connection context to create the appender in.
+  /// @param schema The schema of the table to append to, or `nullptr` for the default schema.
+  /// @param table The table name to append to.
+  /// @param out_appender The resulting appender object.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_appender_create(
     duckdb_connection connection,
     ffi.Pointer<ffi.Char> schema,
@@ -4968,8 +6774,8 @@ class Bindings {
   /// !
   /// Returns the number of columns in the table that belongs to the appender.
   ///
-  /// appender The appender to get the column count from.
-  /// returns: The number of columns in the table.
+  /// @param appender The appender to get the column count from.
+  /// @return The number of columns in the table.
   int duckdb_appender_column_count(
     duckdb_appender appender,
   ) {
@@ -4989,9 +6795,9 @@ class Bindings {
   ///
   /// Note: The resulting type should be destroyed with `duckdb_destroy_logical_type`.
   ///
-  /// appender The appender to get the column type from.
-  /// col_idx The index of the column to get the type of.
-  /// returns: The duckdb_logical_type of the column.
+  /// @param appender The appender to get the column type from.
+  /// @param col_idx The index of the column to get the type of.
+  /// @return The duckdb_logical_type of the column.
   duckdb_logical_type duckdb_appender_column_type(
     duckdb_appender appender,
     int col_idx,
@@ -5015,8 +6821,8 @@ class Bindings {
   ///
   /// The error message should not be freed. It will be de-allocated when `duckdb_appender_destroy` is called.
   ///
-  /// appender: The appender to get the error from.
-  /// returns: The error message, or `nullptr` if there is none.
+  /// @param appender The appender to get the error from.
+  /// @return The error message, or `nullptr` if there is none.
   ffi.Pointer<ffi.Char> duckdb_appender_error(
     duckdb_appender appender,
   ) {
@@ -5037,8 +6843,8 @@ class Bindings {
   /// It is not possible to append more values. Call duckdb_appender_error to obtain the error message followed by
   /// duckdb_appender_destroy to destroy the invalidated appender.
   ///
-  /// appender: The appender to flush.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param appender The appender to flush.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_appender_flush(
     duckdb_appender appender,
   ) {
@@ -5059,8 +6865,8 @@ class Bindings {
   /// Call duckdb_appender_error to obtain the error message followed by duckdb_appender_destroy to destroy the invalidated
   /// appender.
   ///
-  /// appender: The appender to flush and close.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param appender The appender to flush and close.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_appender_close(
     duckdb_appender appender,
   ) {
@@ -5082,8 +6888,8 @@ class Bindings {
   /// longer possible to obtain the specific error message with duckdb_appender_error. Therefore, call duckdb_appender_close
   /// before destroying the appender, if you need insights into the specific error.
   ///
-  /// appender: The appender to flush, close and destroy.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param appender The appender to flush, close and destroy.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_appender_destroy(
     ffi.Pointer<duckdb_appender> appender,
   ) {
@@ -5117,8 +6923,8 @@ class Bindings {
   /// !
   /// Finish the current row of appends. After end_row is called, the next row can be appended.
   ///
-  /// appender: The appender.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param appender The appender.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_appender_end_row(
     duckdb_appender appender,
   ) {
@@ -5132,6 +6938,22 @@ class Bindings {
           'duckdb_appender_end_row');
   late final _duckdb_appender_end_row =
       _duckdb_appender_end_rowPtr.asFunction<int Function(duckdb_appender)>();
+
+  /// !
+  /// Append a DEFAULT value (NULL if DEFAULT not available for column) to the appender.
+  int duckdb_append_default(
+    duckdb_appender appender,
+  ) {
+    return _duckdb_append_default(
+      appender,
+    );
+  }
+
+  late final _duckdb_append_defaultPtr =
+      _lookup<ffi.NativeFunction<ffi.Int32 Function(duckdb_appender)>>(
+          'duckdb_append_default');
+  late final _duckdb_append_default =
+      _duckdb_append_defaultPtr.asFunction<int Function(duckdb_appender)>();
 
   /// !
   /// Append a bool value to the appender.
@@ -5527,9 +7349,9 @@ class Bindings {
   /// If the types do not match or the appender is in an invalid state, DuckDBError is returned.
   /// If the append is successful, DuckDBSuccess is returned.
   ///
-  /// appender: The appender to append to.
-  /// chunk: The data chunk to append.
-  /// returns: The return state.
+  /// @param appender The appender to append to.
+  /// @param chunk The data chunk to append.
+  /// @return The return state.
   int duckdb_append_data_chunk(
     duckdb_appender appender,
     duckdb_data_chunk chunk,
@@ -5548,6 +7370,112 @@ class Bindings {
       .asFunction<int Function(duckdb_appender, duckdb_data_chunk)>();
 
   /// !
+  /// Creates a table description object. Note that `duckdb_table_description_destroy` should always be called on the
+  /// resulting table_description, even if the function returns `DuckDBError`.
+  ///
+  /// @param connection The connection context.
+  /// @param schema The schema of the table, or `nullptr` for the default schema.
+  /// @param table The table name.
+  /// @param out The resulting table description object.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
+  int duckdb_table_description_create(
+    duckdb_connection connection,
+    ffi.Pointer<ffi.Char> schema,
+    ffi.Pointer<ffi.Char> table,
+    ffi.Pointer<duckdb_table_description> out,
+  ) {
+    return _duckdb_table_description_create(
+      connection,
+      schema,
+      table,
+      out,
+    );
+  }
+
+  late final _duckdb_table_description_createPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Int32 Function(
+                  duckdb_connection,
+                  ffi.Pointer<ffi.Char>,
+                  ffi.Pointer<ffi.Char>,
+                  ffi.Pointer<duckdb_table_description>)>>(
+      'duckdb_table_description_create');
+  late final _duckdb_table_description_create =
+      _duckdb_table_description_createPtr.asFunction<
+          int Function(duckdb_connection, ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>, ffi.Pointer<duckdb_table_description>)>();
+
+  /// !
+  /// Destroy the TableDescription object.
+  ///
+  /// @param table_description The table_description to destroy.
+  void duckdb_table_description_destroy(
+    ffi.Pointer<duckdb_table_description> table_description,
+  ) {
+    return _duckdb_table_description_destroy(
+      table_description,
+    );
+  }
+
+  late final _duckdb_table_description_destroyPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Pointer<duckdb_table_description>)>>(
+      'duckdb_table_description_destroy');
+  late final _duckdb_table_description_destroy =
+      _duckdb_table_description_destroyPtr
+          .asFunction<void Function(ffi.Pointer<duckdb_table_description>)>();
+
+  /// !
+  /// Returns the error message associated with the given table_description.
+  /// If the table_description has no error message, this returns `nullptr` instead.
+  /// The error message should not be freed. It will be de-allocated when `duckdb_table_description_destroy` is called.
+  ///
+  /// @param table_description The table_description to get the error from.
+  /// @return The error message, or `nullptr` if there is none.
+  ffi.Pointer<ffi.Char> duckdb_table_description_error(
+    duckdb_table_description table_description,
+  ) {
+    return _duckdb_table_description_error(
+      table_description,
+    );
+  }
+
+  late final _duckdb_table_description_errorPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(
+              duckdb_table_description)>>('duckdb_table_description_error');
+  late final _duckdb_table_description_error =
+      _duckdb_table_description_errorPtr.asFunction<
+          ffi.Pointer<ffi.Char> Function(duckdb_table_description)>();
+
+  /// !
+  /// Check if the column at 'index' index of the table has a DEFAULT expression.
+  ///
+  /// @param table_description The table_description to query.
+  /// @param index The index of the column to query.
+  /// @param out The out-parameter used to store the result.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
+  int duckdb_column_has_default(
+    duckdb_table_description table_description,
+    int index,
+    ffi.Pointer<ffi.Bool> out,
+  ) {
+    return _duckdb_column_has_default(
+      table_description,
+      index,
+      out,
+    );
+  }
+
+  late final _duckdb_column_has_defaultPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int32 Function(duckdb_table_description, idx_t,
+              ffi.Pointer<ffi.Bool>)>>('duckdb_column_has_default');
+  late final _duckdb_column_has_default =
+      _duckdb_column_has_defaultPtr.asFunction<
+          int Function(duckdb_table_description, int, ffi.Pointer<ffi.Bool>)>();
+
+  /// !
   /// DEPRECATION NOTICE**: This method is scheduled for removal in a future release.
   ///
   /// Executes a SQL query within a connection and stores the full (materialized) result in an arrow structure.
@@ -5557,10 +7485,10 @@ class Bindings {
   /// Note that after running `duckdb_query_arrow`, `duckdb_destroy_arrow` must be called on the result object even if the
   /// query fails, otherwise the error stored within the result will not be freed correctly.
   ///
-  /// connection: The connection to perform the query in.
-  /// query: The SQL query to run.
-  /// out_result: The query result.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param connection The connection to perform the query in.
+  /// @param query The SQL query to run.
+  /// @param out_result The query result.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_query_arrow(
     duckdb_connection connection,
     ffi.Pointer<ffi.Char> query,
@@ -5587,9 +7515,9 @@ class Bindings {
   /// Fetch the internal arrow schema from the arrow result. Remember to call release on the respective
   /// ArrowSchema object.
   ///
-  /// result: The result to fetch the schema from.
-  /// out_schema: The output schema.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param result The result to fetch the schema from.
+  /// @param out_schema The output schema.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_query_arrow_schema(
     duckdb_arrow result,
     ffi.Pointer<duckdb_arrow_schema> out_schema,
@@ -5614,9 +7542,9 @@ class Bindings {
   /// Fetch the internal arrow schema from the prepared statement. Remember to call release on the respective
   /// ArrowSchema object.
   ///
-  /// result: The prepared statement to fetch the schema from.
-  /// out_schema: The output schema.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param prepared The prepared statement to fetch the schema from.
+  /// @param out_schema The output schema.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_prepared_arrow_schema(
     duckdb_prepared_statement prepared,
     ffi.Pointer<duckdb_arrow_schema> out_schema,
@@ -5643,9 +7571,9 @@ class Bindings {
   /// Convert a data chunk into an arrow struct array. Remember to call release on the respective
   /// ArrowArray object.
   ///
-  /// result: The result object the data chunk have been fetched from.
-  /// chunk: The data chunk to convert.
-  /// out_array: The output array.
+  /// @param result The result object the data chunk have been fetched from.
+  /// @param chunk The data chunk to convert.
+  /// @param out_array The output array.
   void duckdb_result_arrow_array(
     duckdb_result result,
     duckdb_data_chunk chunk,
@@ -5676,9 +7604,9 @@ class Bindings {
   /// This function can be called multiple time to get next chunks, which will free the previous out_array.
   /// So consume the out_array before calling this function again.
   ///
-  /// result: The result to fetch the array from.
-  /// out_array: The output array.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param result The result to fetch the array from.
+  /// @param out_array The output array.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_query_arrow_array(
     duckdb_arrow result,
     ffi.Pointer<duckdb_arrow_array> out_array,
@@ -5702,8 +7630,8 @@ class Bindings {
   ///
   /// Returns the number of columns present in the arrow result object.
   ///
-  /// result: The result object.
-  /// returns: The number of columns present in the result object.
+  /// @param result The result object.
+  /// @return The number of columns present in the result object.
   int duckdb_arrow_column_count(
     duckdb_arrow result,
   ) {
@@ -5723,8 +7651,8 @@ class Bindings {
   ///
   /// Returns the number of rows present in the arrow result object.
   ///
-  /// result: The result object.
-  /// returns: The number of rows present in the result object.
+  /// @param result The result object.
+  /// @return The number of rows present in the result object.
   int duckdb_arrow_row_count(
     duckdb_arrow result,
   ) {
@@ -5745,8 +7673,8 @@ class Bindings {
   /// Returns the number of rows changed by the query stored in the arrow result. This is relevant only for
   /// INSERT/UPDATE/DELETE queries. For other queries the rows_changed will be 0.
   ///
-  /// result: The result object.
-  /// returns: The number of rows changed.
+  /// @param result The result object.
+  /// @return The number of rows changed.
   int duckdb_arrow_rows_changed(
     duckdb_arrow result,
   ) {
@@ -5769,8 +7697,8 @@ class Bindings {
   ///
   /// The error message should not be freed. It will be de-allocated when `duckdb_destroy_arrow` is called.
   ///
-  /// result: The result object to fetch the error from.
-  /// returns: The error of the result.
+  /// @param result The result object to fetch the error from.
+  /// @return The error of the result.
   ffi.Pointer<ffi.Char> duckdb_query_arrow_error(
     duckdb_arrow result,
   ) {
@@ -5790,7 +7718,7 @@ class Bindings {
   ///
   /// Closes the result and de-allocates all memory allocated for the arrow result.
   ///
-  /// result: The result to destroy.
+  /// @param result The result to destroy.
   void duckdb_destroy_arrow(
     ffi.Pointer<duckdb_arrow> result,
   ) {
@@ -5810,7 +7738,7 @@ class Bindings {
   ///
   /// Releases the arrow array stream and de-allocates its memory.
   ///
-  /// stream: The arrow array stream to destroy.
+  /// @param stream_p The arrow array stream to destroy.
   void duckdb_destroy_arrow_stream(
     ffi.Pointer<duckdb_arrow_stream> stream_p,
   ) {
@@ -5832,9 +7760,9 @@ class Bindings {
   /// Executes the prepared statement with the given bound parameters, and returns an arrow query result.
   /// Note that after running `duckdb_execute_prepared_arrow`, `duckdb_destroy_arrow` must be called on the result object.
   ///
-  /// prepared_statement: The prepared statement to execute.
-  /// out_result: The query result.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param prepared_statement The prepared statement to execute.
+  /// @param out_result The query result.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_execute_prepared_arrow(
     duckdb_prepared_statement prepared_statement,
     ffi.Pointer<duckdb_arrow> out_result,
@@ -5858,10 +7786,10 @@ class Bindings {
   ///
   /// Scans the Arrow stream and creates a view with the given name.
   ///
-  /// connection: The connection on which to execute the scan.
-  /// table_name: Name of the temporary view to create.
-  /// arrow: Arrow stream wrapper.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param connection The connection on which to execute the scan.
+  /// @param table_name Name of the temporary view to create.
+  /// @param arrow Arrow stream wrapper.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_arrow_scan(
     duckdb_connection connection,
     ffi.Pointer<ffi.Char> table_name,
@@ -5888,12 +7816,12 @@ class Bindings {
   /// Scans the Arrow array and creates a view with the given name.
   /// Note that after running `duckdb_arrow_array_scan`, `duckdb_destroy_arrow_stream` must be called on the out stream.
   ///
-  /// connection: The connection on which to execute the scan.
-  /// table_name: Name of the temporary view to create.
-  /// arrow_schema: Arrow schema wrapper.
-  /// arrow_array: Arrow array wrapper.
-  /// out_stream: Output array stream that wraps around the passed schema, for releasing/deleting once done.
-  /// returns: `DuckDBSuccess` on success or `DuckDBError` on failure.
+  /// @param connection The connection on which to execute the scan.
+  /// @param table_name Name of the temporary view to create.
+  /// @param arrow_schema Arrow schema wrapper.
+  /// @param arrow_array Arrow array wrapper.
+  /// @param out_stream Output array stream that wraps around the passed schema, for releasing/deleting once done.
+  /// @return `DuckDBSuccess` on success or `DuckDBError` on failure.
   int duckdb_arrow_array_scan(
     duckdb_connection connection,
     ffi.Pointer<ffi.Char> table_name,
@@ -5931,8 +7859,8 @@ class Bindings {
   ///
   /// Will return after `max_tasks` have been executed, or if there are no more tasks present.
   ///
-  /// database: The database object to execute tasks for
-  /// max_tasks: The maximum amount of tasks to execute
+  /// @param database The database object to execute tasks for
+  /// @param max_tasks The maximum amount of tasks to execute
   void duckdb_execute_tasks(
     duckdb_database database,
     int max_tasks,
@@ -5955,8 +7883,8 @@ class Bindings {
   ///
   /// `duckdb_destroy_state` must be called on the result.
   ///
-  /// database: The database object to create the task state for
-  /// returns: The task state that can be used with duckdb_execute_tasks_state.
+  /// @param database The database object to create the task state for
+  /// @return The task state that can be used with duckdb_execute_tasks_state.
   duckdb_task_state duckdb_create_task_state(
     duckdb_database database,
   ) {
@@ -5977,7 +7905,7 @@ class Bindings {
   /// The thread will keep on executing tasks forever, until duckdb_finish_execution is called on the state.
   /// Multiple threads can share the same duckdb_task_state.
   ///
-  /// state: The task state of the executor
+  /// @param state The task state of the executor
   void duckdb_execute_tasks_state(
     duckdb_task_state state,
   ) {
@@ -6000,9 +7928,9 @@ class Bindings {
   ///
   /// Multiple threads can share the same duckdb_task_state.
   ///
-  /// state: The task state of the executor
-  /// max_tasks: The maximum amount of tasks to execute
-  /// returns: The amount of tasks that have actually been executed
+  /// @param state The task state of the executor
+  /// @param max_tasks The maximum amount of tasks to execute
+  /// @return The amount of tasks that have actually been executed
   int duckdb_execute_n_tasks_state(
     duckdb_task_state state,
     int max_tasks,
@@ -6022,7 +7950,7 @@ class Bindings {
   /// !
   /// Finish execution on a specific task.
   ///
-  /// state: The task state to finish execution
+  /// @param state The task state to finish execution
   void duckdb_finish_execution(
     duckdb_task_state state,
   ) {
@@ -6040,8 +7968,8 @@ class Bindings {
   /// !
   /// Check if the provided duckdb_task_state has finished execution
   ///
-  /// state: The task state to inspect
-  /// returns: Whether or not duckdb_finish_execution has been called on the task state
+  /// @param state The task state to inspect
+  /// @return Whether or not duckdb_finish_execution has been called on the task state
   bool duckdb_task_state_is_finished(
     duckdb_task_state state,
   ) {
@@ -6062,7 +7990,7 @@ class Bindings {
   /// Note that this should not be called while there is an active duckdb_execute_tasks_state running
   /// on the task state.
   ///
-  /// state: The task state to clean up
+  /// @param state The task state to clean up
   void duckdb_destroy_task_state(
     duckdb_task_state state,
   ) {
@@ -6080,7 +8008,7 @@ class Bindings {
   /// !
   /// Returns true if the execution of the current query is finished.
   ///
-  /// con: The connection on which to check
+  /// @param con The connection on which to check
   bool duckdb_execution_is_finished(
     duckdb_connection con,
   ) {
@@ -6110,8 +8038,8 @@ class Bindings {
   ///
   /// It is not known beforehand how many chunks will be returned by this result.
   ///
-  /// result: The result object to fetch the data chunk from.
-  /// returns: The resulting data chunk. Returns `NULL` if the result has an error.
+  /// @param result The result object to fetch the data chunk from.
+  /// @return The resulting data chunk. Returns `NULL` if the result has an error.
   duckdb_data_chunk duckdb_stream_fetch_chunk(
     duckdb_result result,
   ) {
@@ -6133,8 +8061,8 @@ class Bindings {
   ///
   /// It is not known beforehand how many chunks will be returned by this result.
   ///
-  /// result: The result object to fetch the data chunk from.
-  /// returns: The resulting data chunk. Returns `NULL` if the result has an error.
+  /// @param result The result object to fetch the data chunk from.
+  /// @return The resulting data chunk. Returns `NULL` if the result has an error.
   duckdb_data_chunk duckdb_fetch_chunk(
     duckdb_result result,
   ) {
@@ -6148,6 +8076,283 @@ class Bindings {
           'duckdb_fetch_chunk');
   late final _duckdb_fetch_chunk = _duckdb_fetch_chunkPtr
       .asFunction<duckdb_data_chunk Function(duckdb_result)>();
+
+  /// !
+  /// Creates a new cast function object.
+  ///
+  /// @return The cast function object.
+  duckdb_cast_function duckdb_create_cast_function() {
+    return _duckdb_create_cast_function();
+  }
+
+  late final _duckdb_create_cast_functionPtr =
+      _lookup<ffi.NativeFunction<duckdb_cast_function Function()>>(
+          'duckdb_create_cast_function');
+  late final _duckdb_create_cast_function = _duckdb_create_cast_functionPtr
+      .asFunction<duckdb_cast_function Function()>();
+
+  /// !
+  /// Sets the source type of the cast function.
+  ///
+  /// @param cast_function The cast function object.
+  /// @param source_type The source type to set.
+  void duckdb_cast_function_set_source_type(
+    duckdb_cast_function cast_function,
+    duckdb_logical_type source_type,
+  ) {
+    return _duckdb_cast_function_set_source_type(
+      cast_function,
+      source_type,
+    );
+  }
+
+  late final _duckdb_cast_function_set_source_typePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_cast_function,
+              duckdb_logical_type)>>('duckdb_cast_function_set_source_type');
+  late final _duckdb_cast_function_set_source_type =
+      _duckdb_cast_function_set_source_typePtr.asFunction<
+          void Function(duckdb_cast_function, duckdb_logical_type)>();
+
+  /// !
+  /// Sets the target type of the cast function.
+  ///
+  /// @param cast_function The cast function object.
+  /// @param target_type The target type to set.
+  void duckdb_cast_function_set_target_type(
+    duckdb_cast_function cast_function,
+    duckdb_logical_type target_type,
+  ) {
+    return _duckdb_cast_function_set_target_type(
+      cast_function,
+      target_type,
+    );
+  }
+
+  late final _duckdb_cast_function_set_target_typePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_cast_function,
+              duckdb_logical_type)>>('duckdb_cast_function_set_target_type');
+  late final _duckdb_cast_function_set_target_type =
+      _duckdb_cast_function_set_target_typePtr.asFunction<
+          void Function(duckdb_cast_function, duckdb_logical_type)>();
+
+  /// !
+  /// Sets the "cost" of implicitly casting the source type to the target type using this function.
+  ///
+  /// @param cast_function The cast function object.
+  /// @param cost The cost to set.
+  void duckdb_cast_function_set_implicit_cast_cost(
+    duckdb_cast_function cast_function,
+    int cost,
+  ) {
+    return _duckdb_cast_function_set_implicit_cast_cost(
+      cast_function,
+      cost,
+    );
+  }
+
+  late final _duckdb_cast_function_set_implicit_cast_costPtr = _lookup<
+          ffi
+          .NativeFunction<ffi.Void Function(duckdb_cast_function, ffi.Int64)>>(
+      'duckdb_cast_function_set_implicit_cast_cost');
+  late final _duckdb_cast_function_set_implicit_cast_cost =
+      _duckdb_cast_function_set_implicit_cast_costPtr
+          .asFunction<void Function(duckdb_cast_function, int)>();
+
+  /// !
+  /// Sets the actual cast function to use.
+  ///
+  /// @param cast_function The cast function object.
+  /// @param function The function to set.
+  void duckdb_cast_function_set_function(
+    duckdb_cast_function cast_function,
+    duckdb_cast_function_t function,
+  ) {
+    return _duckdb_cast_function_set_function(
+      cast_function,
+      function,
+    );
+  }
+
+  late final _duckdb_cast_function_set_functionPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_cast_function,
+              duckdb_cast_function_t)>>('duckdb_cast_function_set_function');
+  late final _duckdb_cast_function_set_function =
+      _duckdb_cast_function_set_functionPtr.asFunction<
+          void Function(duckdb_cast_function, duckdb_cast_function_t)>();
+
+  /// !
+  /// Assigns extra information to the cast function that can be fetched during execution, etc.
+  ///
+  /// @param extra_info The extra information
+  /// @param destroy The callback that will be called to destroy the extra information (if any)
+  void duckdb_cast_function_set_extra_info(
+    duckdb_cast_function cast_function,
+    ffi.Pointer<ffi.Void> extra_info,
+    duckdb_delete_callback_t destroy,
+  ) {
+    return _duckdb_cast_function_set_extra_info(
+      cast_function,
+      extra_info,
+      destroy,
+    );
+  }
+
+  late final _duckdb_cast_function_set_extra_infoPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(duckdb_cast_function, ffi.Pointer<ffi.Void>,
+                  duckdb_delete_callback_t)>>(
+      'duckdb_cast_function_set_extra_info');
+  late final _duckdb_cast_function_set_extra_info =
+      _duckdb_cast_function_set_extra_infoPtr.asFunction<
+          void Function(duckdb_cast_function, ffi.Pointer<ffi.Void>,
+              duckdb_delete_callback_t)>();
+
+  /// !
+  /// Retrieves the extra info of the function as set in `duckdb_cast_function_set_extra_info`.
+  ///
+  /// @param info The info object.
+  /// @return The extra info.
+  ffi.Pointer<ffi.Void> duckdb_cast_function_get_extra_info(
+    duckdb_function_info info,
+  ) {
+    return _duckdb_cast_function_get_extra_info(
+      info,
+    );
+  }
+
+  late final _duckdb_cast_function_get_extra_infoPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<ffi.Void> Function(
+              duckdb_function_info)>>('duckdb_cast_function_get_extra_info');
+  late final _duckdb_cast_function_get_extra_info =
+      _duckdb_cast_function_get_extra_infoPtr
+          .asFunction<ffi.Pointer<ffi.Void> Function(duckdb_function_info)>();
+
+  /// !
+  /// Get the cast execution mode from the given function info.
+  ///
+  /// @param info The info object.
+  /// @return The cast mode.
+  int duckdb_cast_function_get_cast_mode(
+    duckdb_function_info info,
+  ) {
+    return _duckdb_cast_function_get_cast_mode(
+      info,
+    );
+  }
+
+  late final _duckdb_cast_function_get_cast_modePtr =
+      _lookup<ffi.NativeFunction<ffi.Int32 Function(duckdb_function_info)>>(
+          'duckdb_cast_function_get_cast_mode');
+  late final _duckdb_cast_function_get_cast_mode =
+      _duckdb_cast_function_get_cast_modePtr
+          .asFunction<int Function(duckdb_function_info)>();
+
+  /// !
+  /// Report that an error has occurred while executing the cast function.
+  ///
+  /// @param info The info object.
+  /// @param error The error message.
+  void duckdb_cast_function_set_error(
+    duckdb_function_info info,
+    ffi.Pointer<ffi.Char> error,
+  ) {
+    return _duckdb_cast_function_set_error(
+      info,
+      error,
+    );
+  }
+
+  late final _duckdb_cast_function_set_errorPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_function_info,
+              ffi.Pointer<ffi.Char>)>>('duckdb_cast_function_set_error');
+  late final _duckdb_cast_function_set_error =
+      _duckdb_cast_function_set_errorPtr.asFunction<
+          void Function(duckdb_function_info, ffi.Pointer<ffi.Char>)>();
+
+  /// !
+  /// Report that an error has occurred while executing the cast function, setting the corresponding output row to NULL.
+  ///
+  /// @param info The info object.
+  /// @param error The error message.
+  /// @param row The index of the row within the output vector to set to NULL.
+  /// @param output The output vector.
+  void duckdb_cast_function_set_row_error(
+    duckdb_function_info info,
+    ffi.Pointer<ffi.Char> error,
+    int row,
+    duckdb_vector output,
+  ) {
+    return _duckdb_cast_function_set_row_error(
+      info,
+      error,
+      row,
+      output,
+    );
+  }
+
+  late final _duckdb_cast_function_set_row_errorPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(duckdb_function_info, ffi.Pointer<ffi.Char>, idx_t,
+              duckdb_vector)>>('duckdb_cast_function_set_row_error');
+  late final _duckdb_cast_function_set_row_error =
+      _duckdb_cast_function_set_row_errorPtr.asFunction<
+          void Function(duckdb_function_info, ffi.Pointer<ffi.Char>, int,
+              duckdb_vector)>();
+
+  /// !
+  /// Registers a cast function within the given connection.
+  ///
+  /// @param con The connection to use.
+  /// @param cast_function The cast function to register.
+  /// @return Whether or not the registration was successful.
+  int duckdb_register_cast_function(
+    duckdb_connection con,
+    duckdb_cast_function cast_function,
+  ) {
+    return _duckdb_register_cast_function(
+      con,
+      cast_function,
+    );
+  }
+
+  late final _duckdb_register_cast_functionPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int32 Function(duckdb_connection,
+              duckdb_cast_function)>>('duckdb_register_cast_function');
+  late final _duckdb_register_cast_function = _duckdb_register_cast_functionPtr
+      .asFunction<int Function(duckdb_connection, duckdb_cast_function)>();
+
+  /// !
+  /// Destroys the cast function object.
+  ///
+  /// @param cast_function The cast function object.
+  void duckdb_destroy_cast_function(
+    ffi.Pointer<duckdb_cast_function> cast_function,
+  ) {
+    return _duckdb_destroy_cast_function(
+      cast_function,
+    );
+  }
+
+  late final _duckdb_destroy_cast_functionPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Pointer<duckdb_cast_function>)>>(
+      'duckdb_destroy_cast_function');
+  late final _duckdb_destroy_cast_function = _duckdb_destroy_cast_functionPtr
+      .asFunction<void Function(ffi.Pointer<duckdb_cast_function>)>();
+}
+
+final class __mbstate_t extends ffi.Union {
+  @ffi.Array.multi([128])
+  external ffi.Array<ffi.Char> __mbstate8;
+
+  @ffi.LongLong()
+  external int _mbstateL;
 }
 
 /// ! An enum over DuckDB's internal types.
@@ -6186,6 +8391,9 @@ abstract class DUCKDB_TYPE {
   static const int DUCKDB_TYPE_BIT = 29;
   static const int DUCKDB_TYPE_TIME_TZ = 30;
   static const int DUCKDB_TYPE_TIMESTAMP_TZ = 31;
+  static const int DUCKDB_TYPE_ANY = 34;
+  static const int DUCKDB_TYPE_VARINT = 35;
+  static const int DUCKDB_TYPE_SQLNULL = 36;
 }
 
 /// ! An enum over the returned state of different functions.
@@ -6240,6 +8448,59 @@ abstract class duckdb_statement_type {
   static const int DUCKDB_STATEMENT_TYPE_ATTACH = 25;
   static const int DUCKDB_STATEMENT_TYPE_DETACH = 26;
   static const int DUCKDB_STATEMENT_TYPE_MULTI = 27;
+}
+
+/// ! An enum over DuckDB's different result types.
+abstract class duckdb_error_type {
+  static const int DUCKDB_ERROR_INVALID = 0;
+  static const int DUCKDB_ERROR_OUT_OF_RANGE = 1;
+  static const int DUCKDB_ERROR_CONVERSION = 2;
+  static const int DUCKDB_ERROR_UNKNOWN_TYPE = 3;
+  static const int DUCKDB_ERROR_DECIMAL = 4;
+  static const int DUCKDB_ERROR_MISMATCH_TYPE = 5;
+  static const int DUCKDB_ERROR_DIVIDE_BY_ZERO = 6;
+  static const int DUCKDB_ERROR_OBJECT_SIZE = 7;
+  static const int DUCKDB_ERROR_INVALID_TYPE = 8;
+  static const int DUCKDB_ERROR_SERIALIZATION = 9;
+  static const int DUCKDB_ERROR_TRANSACTION = 10;
+  static const int DUCKDB_ERROR_NOT_IMPLEMENTED = 11;
+  static const int DUCKDB_ERROR_EXPRESSION = 12;
+  static const int DUCKDB_ERROR_CATALOG = 13;
+  static const int DUCKDB_ERROR_PARSER = 14;
+  static const int DUCKDB_ERROR_PLANNER = 15;
+  static const int DUCKDB_ERROR_SCHEDULER = 16;
+  static const int DUCKDB_ERROR_EXECUTOR = 17;
+  static const int DUCKDB_ERROR_CONSTRAINT = 18;
+  static const int DUCKDB_ERROR_INDEX = 19;
+  static const int DUCKDB_ERROR_STAT = 20;
+  static const int DUCKDB_ERROR_CONNECTION = 21;
+  static const int DUCKDB_ERROR_SYNTAX = 22;
+  static const int DUCKDB_ERROR_SETTINGS = 23;
+  static const int DUCKDB_ERROR_BINDER = 24;
+  static const int DUCKDB_ERROR_NETWORK = 25;
+  static const int DUCKDB_ERROR_OPTIMIZER = 26;
+  static const int DUCKDB_ERROR_NULL_POINTER = 27;
+  static const int DUCKDB_ERROR_IO = 28;
+  static const int DUCKDB_ERROR_INTERRUPT = 29;
+  static const int DUCKDB_ERROR_FATAL = 30;
+  static const int DUCKDB_ERROR_INTERNAL = 31;
+  static const int DUCKDB_ERROR_INVALID_INPUT = 32;
+  static const int DUCKDB_ERROR_OUT_OF_MEMORY = 33;
+  static const int DUCKDB_ERROR_PERMISSION = 34;
+  static const int DUCKDB_ERROR_PARAMETER_NOT_RESOLVED = 35;
+  static const int DUCKDB_ERROR_PARAMETER_NOT_ALLOWED = 36;
+  static const int DUCKDB_ERROR_DEPENDENCY = 37;
+  static const int DUCKDB_ERROR_HTTP = 38;
+  static const int DUCKDB_ERROR_MISSING_EXTENSION = 39;
+  static const int DUCKDB_ERROR_AUTOLOAD = 40;
+  static const int DUCKDB_ERROR_SEQUENCE = 41;
+  static const int DUCKDB_INVALID_CONFIGURATION = 42;
+}
+
+/// ! An enum over DuckDB's different cast modes.
+abstract class duckdb_cast_mode {
+  static const int DUCKDB_CAST_NORMAL = 0;
+  static const int DUCKDB_CAST_TRY = 1;
 }
 
 /// ! Days are stored as days since 1970-01-01
@@ -6408,14 +8669,14 @@ final class duckdb_list_entry extends ffi.Struct {
 /// ! duckdb_column_type, and duckdb_column_name, which take the result and the column index
 /// ! as their parameters
 final class duckdb_column extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __deprecated_data;
+  external ffi.Pointer<ffi.Void> deprecated_data;
 
-  external ffi.Pointer<ffi.Bool> __deprecated_nullmask;
+  external ffi.Pointer<ffi.Bool> deprecated_nullmask;
 
   @ffi.Int32()
-  external int __deprecated_type;
+  external int deprecated_type;
 
-  external ffi.Pointer<ffi.Char> __deprecated_name;
+  external ffi.Pointer<ffi.Char> deprecated_name;
 
   external ffi.Pointer<ffi.Void> internal_data;
 }
@@ -6446,19 +8707,50 @@ final class duckdb_blob extends ffi.Struct {
 /// ! Must be freed with 'duckdb_destroy_result'.
 final class duckdb_result extends ffi.Struct {
   @idx_t()
-  external int __deprecated_column_count;
+  external int deprecated_column_count;
 
   @idx_t()
-  external int __deprecated_row_count;
+  external int deprecated_row_count;
 
   @idx_t()
-  external int __deprecated_rows_changed;
+  external int deprecated_rows_changed;
 
-  external ffi.Pointer<duckdb_column> __deprecated_columns;
+  external ffi.Pointer<duckdb_column> deprecated_columns;
 
-  external ffi.Pointer<ffi.Char> __deprecated_error_message;
+  external ffi.Pointer<ffi.Char> deprecated_error_message;
 
   external ffi.Pointer<ffi.Void> internal_data;
+}
+
+/// ! Passed to C API extension as parameter to the entrypoint
+final class duckdb_extension_access extends ffi.Struct {
+  /// ! Indicate that an error has occured
+  external ffi.Pointer<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  duckdb_extension_info info, ffi.Pointer<ffi.Char> error)>>
+      set_error;
+
+  /// ! Fetch the database from duckdb to register extensions to
+  external ffi.Pointer<
+      ffi.NativeFunction<
+          ffi.Pointer<duckdb_database> Function(
+              duckdb_extension_info info)>> get_database;
+
+  /// ! Fetch the API
+  external ffi.Pointer<
+          ffi.NativeFunction<
+              ffi.Pointer<ffi.Void> Function(
+                  duckdb_extension_info info, ffi.Pointer<ffi.Char> version)>>
+      get_api;
+}
+
+/// ! Holds state during the C API extension intialization process
+typedef duckdb_extension_info = ffi.Pointer<_duckdb_extension_info>;
+
+/// ! Holds state during the C API extension intialization process
+final class _duckdb_extension_info extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! A database object. Should be closed with `duckdb_close`.
@@ -6466,7 +8758,7 @@ typedef duckdb_database = ffi.Pointer<_duckdb_database>;
 
 /// ! A database object. Should be closed with `duckdb_close`.
 final class _duckdb_database extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __db;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! Can be used to provide start-up options for the DuckDB instance.
@@ -6476,7 +8768,7 @@ typedef duckdb_config = ffi.Pointer<_duckdb_config>;
 /// ! Can be used to provide start-up options for the DuckDB instance.
 /// ! Must be destroyed with `duckdb_destroy_config`.
 final class _duckdb_config extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __cnfg;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! A connection to a duckdb database. Must be closed with `duckdb_disconnect`.
@@ -6484,7 +8776,7 @@ typedef duckdb_connection = ffi.Pointer<_duckdb_connection>;
 
 /// ! A connection to a duckdb database. Must be closed with `duckdb_disconnect`.
 final class _duckdb_connection extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __conn;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! Holds an internal logical type.
@@ -6494,7 +8786,7 @@ typedef duckdb_logical_type = ffi.Pointer<_duckdb_logical_type>;
 /// ! Holds an internal logical type.
 /// ! Must be destroyed with `duckdb_destroy_logical_type`.
 final class _duckdb_logical_type extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __lglt;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! Contains a data chunk from a duckdb_result.
@@ -6504,7 +8796,7 @@ typedef duckdb_data_chunk = ffi.Pointer<_duckdb_data_chunk>;
 /// ! Contains a data chunk from a duckdb_result.
 /// ! Must be destroyed with `duckdb_destroy_data_chunk`.
 final class _duckdb_data_chunk extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __dtck;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! A prepared statement is a parameterized query that allows you to bind parameters to it.
@@ -6514,7 +8806,7 @@ typedef duckdb_prepared_statement = ffi.Pointer<_duckdb_prepared_statement>;
 /// ! A prepared statement is a parameterized query that allows you to bind parameters to it.
 /// ! Must be destroyed with `duckdb_destroy_prepare`.
 final class _duckdb_prepared_statement extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __prep;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! Holds a DuckDB value, which wraps a type.
@@ -6524,7 +8816,7 @@ typedef duckdb_value = ffi.Pointer<_duckdb_value>;
 /// ! Holds a DuckDB value, which wraps a type.
 /// ! Must be destroyed with `duckdb_destroy_value`.
 final class _duckdb_value extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __val;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! Extracted statements. Must be destroyed with `duckdb_destroy_extracted`.
@@ -6532,7 +8824,7 @@ typedef duckdb_extracted_statements = ffi.Pointer<_duckdb_extracted_statements>;
 
 /// ! Extracted statements. Must be destroyed with `duckdb_destroy_extracted`.
 final class _duckdb_extracted_statements extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __extrac;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! The pending result represents an intermediate structure for a query that is not yet fully executed.
@@ -6542,7 +8834,17 @@ typedef duckdb_pending_result = ffi.Pointer<_duckdb_pending_result>;
 /// ! The pending result represents an intermediate structure for a query that is not yet fully executed.
 /// ! Must be destroyed with `duckdb_destroy_pending`.
 final class _duckdb_pending_result extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __pend;
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
+
+/// ! Holds extra information used when registering a custom logical type.
+/// ! Reserved for future use.
+typedef duckdb_create_type_info = ffi.Pointer<_duckdb_create_type_info>;
+
+/// ! Holds extra information used when registering a custom logical type.
+/// ! Reserved for future use.
+final class _duckdb_create_type_info extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! A vector to a specified column in a data chunk. Lives as long as the
@@ -6552,11 +8854,16 @@ typedef duckdb_vector = ffi.Pointer<_duckdb_vector>;
 /// ! A vector to a specified column in a data chunk. Lives as long as the
 /// ! data chunk lives, i.e., must not be destroyed.
 final class _duckdb_vector extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __vctr;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
-/// ! A table function. Must be destroyed with `duckdb_destroy_table_function`.
-typedef duckdb_table_function = ffi.Pointer<ffi.Void>;
+/// ! A scalar function. Must be destroyed with `duckdb_destroy_scalar_function`.
+typedef duckdb_scalar_function = ffi.Pointer<_duckdb_scalar_function>;
+
+/// ! A scalar function. Must be destroyed with `duckdb_destroy_scalar_function`.
+final class _duckdb_scalar_function extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
 
 /// ! The callback that will be called to destroy data, e.g.,
 /// ! bind data (if any), init data (if any), extra data for replacement scans (if any)
@@ -6567,6 +8874,129 @@ typedef duckdb_delete_callback_tFunction = ffi.Void Function(
 typedef Dartduckdb_delete_callback_tFunction = void Function(
     ffi.Pointer<ffi.Void> data);
 
+/// ! The main function of the scalar function.
+typedef duckdb_scalar_function_t
+    = ffi.Pointer<ffi.NativeFunction<duckdb_scalar_function_tFunction>>;
+typedef duckdb_scalar_function_tFunction = ffi.Void Function(
+    duckdb_function_info info, duckdb_data_chunk input, duckdb_vector output);
+typedef Dartduckdb_scalar_function_tFunction = void Function(
+    duckdb_function_info info, duckdb_data_chunk input, duckdb_vector output);
+
+/// ! Additional function info. When setting this info, it is necessary to pass a destroy-callback function.
+typedef duckdb_function_info = ffi.Pointer<_duckdb_function_info>;
+
+/// ! Additional function info. When setting this info, it is necessary to pass a destroy-callback function.
+final class _duckdb_function_info extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
+
+/// ! A scalar function set. Must be destroyed with `duckdb_destroy_scalar_function_set`.
+typedef duckdb_scalar_function_set = ffi.Pointer<_duckdb_scalar_function_set>;
+
+/// ! A scalar function set. Must be destroyed with `duckdb_destroy_scalar_function_set`.
+final class _duckdb_scalar_function_set extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
+
+/// ! An aggregate function. Must be destroyed with `duckdb_destroy_aggregate_function`.
+typedef duckdb_aggregate_function = ffi.Pointer<_duckdb_aggregate_function>;
+
+/// ! An aggregate function. Must be destroyed with `duckdb_destroy_aggregate_function`.
+final class _duckdb_aggregate_function extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
+
+/// ! Returns the aggregate state size
+typedef duckdb_aggregate_state_size
+    = ffi.Pointer<ffi.NativeFunction<duckdb_aggregate_state_sizeFunction>>;
+typedef duckdb_aggregate_state_sizeFunction = idx_t Function(
+    duckdb_function_info info);
+typedef Dartduckdb_aggregate_state_sizeFunction = Dartidx_t Function(
+    duckdb_function_info info);
+
+/// ! Initialize the aggregate state
+typedef duckdb_aggregate_init_t
+    = ffi.Pointer<ffi.NativeFunction<duckdb_aggregate_init_tFunction>>;
+typedef duckdb_aggregate_init_tFunction = ffi.Void Function(
+    duckdb_function_info info, duckdb_aggregate_state state);
+typedef Dartduckdb_aggregate_init_tFunction = void Function(
+    duckdb_function_info info, duckdb_aggregate_state state);
+
+/// ! Aggregate state
+typedef duckdb_aggregate_state = ffi.Pointer<_duckdb_aggregate_state>;
+
+/// ! Aggregate state
+final class _duckdb_aggregate_state extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
+
+/// ! Update a set of aggregate states with new values
+typedef duckdb_aggregate_update_t
+    = ffi.Pointer<ffi.NativeFunction<duckdb_aggregate_update_tFunction>>;
+typedef duckdb_aggregate_update_tFunction = ffi.Void Function(
+    duckdb_function_info info,
+    duckdb_data_chunk input,
+    ffi.Pointer<duckdb_aggregate_state> states);
+typedef Dartduckdb_aggregate_update_tFunction = void Function(
+    duckdb_function_info info,
+    duckdb_data_chunk input,
+    ffi.Pointer<duckdb_aggregate_state> states);
+
+/// ! Combine aggregate states
+typedef duckdb_aggregate_combine_t
+    = ffi.Pointer<ffi.NativeFunction<duckdb_aggregate_combine_tFunction>>;
+typedef duckdb_aggregate_combine_tFunction = ffi.Void Function(
+    duckdb_function_info info,
+    ffi.Pointer<duckdb_aggregate_state> source,
+    ffi.Pointer<duckdb_aggregate_state> target,
+    idx_t count);
+typedef Dartduckdb_aggregate_combine_tFunction = void Function(
+    duckdb_function_info info,
+    ffi.Pointer<duckdb_aggregate_state> source,
+    ffi.Pointer<duckdb_aggregate_state> target,
+    Dartidx_t count);
+
+/// ! Finalize aggregate states into a result vector
+typedef duckdb_aggregate_finalize_t
+    = ffi.Pointer<ffi.NativeFunction<duckdb_aggregate_finalize_tFunction>>;
+typedef duckdb_aggregate_finalize_tFunction = ffi.Void Function(
+    duckdb_function_info info,
+    ffi.Pointer<duckdb_aggregate_state> source,
+    duckdb_vector result,
+    idx_t count,
+    idx_t offset);
+typedef Dartduckdb_aggregate_finalize_tFunction = void Function(
+    duckdb_function_info info,
+    ffi.Pointer<duckdb_aggregate_state> source,
+    duckdb_vector result,
+    Dartidx_t count,
+    Dartidx_t offset);
+
+/// ! Destroy aggregate state (optional)
+typedef duckdb_aggregate_destroy_t
+    = ffi.Pointer<ffi.NativeFunction<duckdb_aggregate_destroy_tFunction>>;
+typedef duckdb_aggregate_destroy_tFunction = ffi.Void Function(
+    ffi.Pointer<duckdb_aggregate_state> states, idx_t count);
+typedef Dartduckdb_aggregate_destroy_tFunction = void Function(
+    ffi.Pointer<duckdb_aggregate_state> states, Dartidx_t count);
+
+/// ! A aggregate function set. Must be destroyed with `duckdb_destroy_aggregate_function_set`.
+typedef duckdb_aggregate_function_set
+    = ffi.Pointer<_duckdb_aggregate_function_set>;
+
+/// ! A aggregate function set. Must be destroyed with `duckdb_destroy_aggregate_function_set`.
+final class _duckdb_aggregate_function_set extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
+
+/// ! A table function. Must be destroyed with `duckdb_destroy_table_function`.
+typedef duckdb_table_function = ffi.Pointer<_duckdb_table_function>;
+
+/// ! A table function. Must be destroyed with `duckdb_destroy_table_function`.
+final class _duckdb_table_function extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
+
 /// ! The bind function of the table function.
 typedef duckdb_table_function_bind_t
     = ffi.Pointer<ffi.NativeFunction<duckdb_table_function_bind_tFunction>>;
@@ -6576,7 +9006,12 @@ typedef Dartduckdb_table_function_bind_tFunction = void Function(
     duckdb_bind_info info);
 
 /// ! The bind info of the function. When setting this info, it is necessary to pass a destroy-callback function.
-typedef duckdb_bind_info = ffi.Pointer<ffi.Void>;
+typedef duckdb_bind_info = ffi.Pointer<_duckdb_bind_info>;
+
+/// ! The bind info of the function. When setting this info, it is necessary to pass a destroy-callback function.
+final class _duckdb_bind_info extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
 
 /// ! The (possibly thread-local) init function of the table function.
 typedef duckdb_table_function_init_t
@@ -6587,7 +9022,12 @@ typedef Dartduckdb_table_function_init_tFunction = void Function(
     duckdb_init_info info);
 
 /// ! Additional function init info. When setting this info, it is necessary to pass a destroy-callback function.
-typedef duckdb_init_info = ffi.Pointer<ffi.Void>;
+typedef duckdb_init_info = ffi.Pointer<_duckdb_init_info>;
+
+/// ! Additional function init info. When setting this info, it is necessary to pass a destroy-callback function.
+final class _duckdb_init_info extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
 
 /// ! The main function of the table function.
 typedef duckdb_table_function_t
@@ -6596,9 +9036,6 @@ typedef duckdb_table_function_tFunction = ffi.Void Function(
     duckdb_function_info info, duckdb_data_chunk output);
 typedef Dartduckdb_table_function_tFunction = void Function(
     duckdb_function_info info, duckdb_data_chunk output);
-
-/// ! Additional function info. When setting this info, it is necessary to pass a destroy-callback function.
-typedef duckdb_function_info = ffi.Pointer<ffi.Void>;
 
 /// ! A replacement scan function that can be added to a database.
 typedef duckdb_replacement_callback_t
@@ -6613,7 +9050,21 @@ typedef Dartduckdb_replacement_callback_tFunction = void Function(
     ffi.Pointer<ffi.Void> data);
 
 /// ! Additional replacement scan info. When setting this info, it is necessary to pass a destroy-callback function.
-typedef duckdb_replacement_scan_info = ffi.Pointer<ffi.Void>;
+typedef duckdb_replacement_scan_info
+    = ffi.Pointer<_duckdb_replacement_scan_info>;
+
+/// ! Additional replacement scan info. When setting this info, it is necessary to pass a destroy-callback function.
+final class _duckdb_replacement_scan_info extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
+
+/// ! Holds a recursive tree that matches the query plan.
+typedef duckdb_profiling_info = ffi.Pointer<_duckdb_profiling_info>;
+
+/// ! Holds a recursive tree that matches the query plan.
+final class _duckdb_profiling_info extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
 
 /// ! The appender enables fast data loading into DuckDB.
 /// ! Must be destroyed with `duckdb_appender_destroy`.
@@ -6622,7 +9073,17 @@ typedef duckdb_appender = ffi.Pointer<_duckdb_appender>;
 /// ! The appender enables fast data loading into DuckDB.
 /// ! Must be destroyed with `duckdb_appender_destroy`.
 final class _duckdb_appender extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __appn;
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
+
+/// ! The table description allows querying info about the table.
+/// ! Must be destroyed with `duckdb_table_description_destroy`.
+typedef duckdb_table_description = ffi.Pointer<_duckdb_table_description>;
+
+/// ! The table description allows querying info about the table.
+/// ! Must be destroyed with `duckdb_table_description_destroy`.
+final class _duckdb_table_description extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! Holds an arrow query result. Must be destroyed with `duckdb_destroy_arrow`.
@@ -6630,7 +9091,7 @@ typedef duckdb_arrow = ffi.Pointer<_duckdb_arrow>;
 
 /// ! Holds an arrow query result. Must be destroyed with `duckdb_destroy_arrow`.
 final class _duckdb_arrow extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __arrw;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! Holds an arrow schema. Remember to release the respective ArrowSchema object.
@@ -6638,7 +9099,7 @@ typedef duckdb_arrow_schema = ffi.Pointer<_duckdb_arrow_schema>;
 
 /// ! Holds an arrow schema. Remember to release the respective ArrowSchema object.
 final class _duckdb_arrow_schema extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __arrs;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! Holds an arrow array. Remember to release the respective ArrowArray object.
@@ -6646,7 +9107,7 @@ typedef duckdb_arrow_array = ffi.Pointer<_duckdb_arrow_array>;
 
 /// ! Holds an arrow array. Remember to release the respective ArrowArray object.
 final class _duckdb_arrow_array extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __arra;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! Holds an arrow array stream. Must be destroyed with `duckdb_destroy_arrow_stream`.
@@ -6654,8 +9115,29 @@ typedef duckdb_arrow_stream = ffi.Pointer<_duckdb_arrow_stream>;
 
 /// ! Holds an arrow array stream. Must be destroyed with `duckdb_destroy_arrow_stream`.
 final class _duckdb_arrow_stream extends ffi.Struct {
-  external ffi.Pointer<ffi.Void> __arrwstr;
+  external ffi.Pointer<ffi.Void> internal_ptr;
 }
 
 /// ! Used for threading, contains a task state. Must be destroyed with `duckdb_destroy_state`.
 typedef duckdb_task_state = ffi.Pointer<ffi.Void>;
+
+/// ! A cast function. Must be destroyed with `duckdb_destroy_cast_function`.
+typedef duckdb_cast_function = ffi.Pointer<_duckdb_cast_function>;
+
+/// ! A cast function. Must be destroyed with `duckdb_destroy_cast_function`.
+final class _duckdb_cast_function extends ffi.Struct {
+  external ffi.Pointer<ffi.Void> internal_ptr;
+}
+
+typedef duckdb_cast_function_t
+    = ffi.Pointer<ffi.NativeFunction<duckdb_cast_function_tFunction>>;
+typedef duckdb_cast_function_tFunction = ffi.Bool Function(
+    duckdb_function_info info,
+    idx_t count,
+    duckdb_vector input,
+    duckdb_vector output);
+typedef Dartduckdb_cast_function_tFunction = bool Function(
+    duckdb_function_info info,
+    Dartidx_t count,
+    duckdb_vector input,
+    duckdb_vector output);

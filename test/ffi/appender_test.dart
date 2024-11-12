@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:dart_duckdb/dart_duckdb.dart';
 import 'package:dart_duckdb/src/impl/implementation.dart';
@@ -173,5 +174,16 @@ void main() {
 
   test('can round trip interval', () {
     roundTripTest("INTERVAL", [Interval(months: 1, days: 2, microseconds: 3)]);
+  });
+
+  test('can round trip BLOBS', () {
+    roundTripTest(
+      "BLOB",
+      [
+        Uint8List.fromList([1, 2, 3, 4, 5]),
+        Uint8List.fromList([6, 7, 8, 9, 10]),
+        null,
+      ],
+    );
   });
 }
