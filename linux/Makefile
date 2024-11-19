@@ -1,4 +1,5 @@
 VERSION = v1.1.3
+DUCKDB_REPO = https://github.com/duckdb/duckdb
 DUCKDB_DIR = ./duckdb
 
 # common environment variables
@@ -18,7 +19,7 @@ clean:
 	make -C $(DUCKDB_DIR) clean;
 
 duckdb: ## Clone DuckDb repo and apply patch
-	git clone --depth 1 --branch "$(VERSION)" https://github.com/duckdb/duckdb $(DUCKDB_DIR)
+	git clone --depth 1 --branch "$(VERSION)" $(DUCKDB_REPO) $(DUCKDB_DIR)
 
 release: duckdb ## x64 linux build
 	@export DUCKDB_PLATFORM=linux_amd64; \
