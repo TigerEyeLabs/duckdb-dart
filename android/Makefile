@@ -47,7 +47,7 @@ clean:
 	make -C $(DUCKDB_DIR) clean
 
 duckdb: ## Shallow clone DuckDb repo and checkout specific commit
-	git clone --depth 1 --branch "$(VERSION)" https://github.com/duckdb/duckdb $(DUCKDB_DIR)
+	git clone --depth 1 --branch "$(VERSION)" $(DUCKDB_REPO) $(DUCKDB_DIR)
 
 build_%: duckdb
 	@mkdir -p $(BUILD_DIR)/extension_configuration

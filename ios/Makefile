@@ -1,4 +1,5 @@
 VERSION = v1.1.3
+DUCKDB_REPO = https://github.com/duckdb/duckdb
 DUCKDB_DIR = ./duckdb
 IOS_PLATFORM_SIMULATOR = iPhoneSimulator
 IOS_PLATFORM_DEVICE = iPhoneOS
@@ -20,7 +21,7 @@ clean: ## Clean duckdb build
 	make -C $(DUCKDB_DIR) clean;
 
 duckdb: ## Clone DuckDb repo and apply patch
-	git clone --depth 1 --branch "$(VERSION)" https://github.com/duckdb/duckdb $(DUCKDB_DIR)
+	git clone --depth 1 --branch "$(VERSION)" $(DUCKDB_REPO) $(DUCKDB_DIR)
 	git -C $(DUCKDB_DIR) apply ../changes.patch
 
 sim_x64: duckdb ## Simulator build for ARM64

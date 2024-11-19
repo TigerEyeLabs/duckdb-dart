@@ -31,7 +31,7 @@ clean: ## Clean duckdb build
 	make -C $(DUCKDB_DIR) clean
 
 duckdb: ## Clone DuckDb repo and apply patch
-	git clone --depth 1 --branch "$(VERSION)" https://github.com/duckdb/duckdb $(DUCKDB_DIR)
+	git clone --depth 1 --branch "$(VERSION)" $(DUCKDB_REPO) $(DUCKDB_DIR)
 	git -C $(DUCKDB_DIR) apply ../changes.patch
 	cp extension_config_local.cmake $(EXTENSION_DIR)
 
