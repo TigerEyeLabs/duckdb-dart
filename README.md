@@ -27,6 +27,67 @@ DuckDB is a high-performance analytical database system known for its speed, rel
 
 For more information on DuckDB's goals and capabilities, visit the [Why DuckDB page](https://duckdb.org/why_duckdb).
 
+## Building DuckDB.dart
+
+- Setup Dart SDK, [Getting Started](https://dart.dev/get-dart)
+- Install FVM, [Getting Started](https://fvm.app/documentation/getting-started/installation)
+- Run Flutter Doctor to ensure everything is setup correctly. `fvm flutter doctor`
+- `make build`
+
+### Android Builds
+
+- Android Studio is required to build the Android binaries, [Install Studio](https://developer.android.com/studio).
+- JDK 17 is required to build the Android binaries.
+
+Here are the step-by-step instructions to install JDK 17 using SDKMAN:
+
+1. First, install SDKMAN if you haven't already:
+```bash
+curl -s "https://get.sdkman.io" | bash
+```
+
+2. Open a new terminal or source SDKMAN in your current terminal:
+```bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+```
+
+3. Verify SDKMAN is installed:
+```bash
+sdk version
+```
+
+4. List available Java versions:
+```bash
+sdk list java
+```
+
+5. Install JDK 17 (you can choose between different distributions like Oracle, Amazon Corretto, Eclipse Temurin, etc.):
+
+Note: The exact version numbers might change over time. Use `sdk list java` to see the latest available versions.
+
+For Temurin (OpenJ9):
+```bash
+sdk install java 17.0.12-tem
+```
+
+6. Verify the installation:
+```bash
+java -version
+```
+
+7. Set JDK 17 as default (optional):
+```bash
+sdk default java 17.0.12-tem
+```
+
+*Note:* If you see
+`"Could not resolve all files for configuration ':dart_duckdb:androidJdkImage'"`
+
+try configuring flutter
+```
+flutter config --jdk-dir=PATH_TO_JDK_17
+```
+
 ## Usage Examples
 
 Here are some common use cases for DuckDB.Dart:
@@ -38,7 +99,7 @@ import 'package:dart_duckdb/dart_duckdb.dart';
 
 void main() {
   final db = duckdb.open(":memory:");
-  final connection = db.connect();
+  final connection = duckdb.connect(db);
 
   connection.execute('''
     CREATE TABLE users (id INTEGER, name VARCHAR, age INTEGER);
@@ -51,8 +112,8 @@ void main() {
     print(row);
   }
 
-  connection.close();
-  db.close();
+  connection.dispose();
+  db.dispose();
 }
 ```
 
@@ -63,12 +124,12 @@ import 'package:dart_duckdb/dart_duckdb.dart';
 
 void main() {
   final db = duckdb.open(":memory:");
-  final connection = db.connect();
+  final connection = duckdb.connect(db);
 
   await Isolate.spawn(backgroundTask, db.transferrable);
 
-  connection.close();
-  db.close();
+  connection.dispose();
+  db.dispose();
 }
 
 void backgroundTask(TransferableDatabase transferableDb) {

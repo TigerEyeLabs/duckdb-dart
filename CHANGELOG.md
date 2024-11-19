@@ -24,5 +24,5 @@
 - Full Value support for PreparedStatements.
 - Leverage Dart generics for vectors and values classes.
 - Added support for streaming query results.
-- Smaller android bindaries by removing unused symbols.
+- Smaller android binaries by removing unused symbols.
 - Improved query performance via faster datachunk indexing via galloping search.
