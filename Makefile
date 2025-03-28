@@ -4,7 +4,9 @@ BRANCH_COVERAGE_THRESHOLD := 0
 
 CHECK_GIT ?= 0
 
-FLUTTER_VERSION := 3.22.3
+FLUTTER_VERSION := 3.29.2
+
+RUN_CHROME_TESTS ?= 0
 
 # Detect the operating system using uname
 OS := $(shell uname 2>/dev/null || echo Windows)
@@ -25,12 +27,10 @@ else
 	PERL := $(shell which perl)
 endif
 
-.fvm:
+.PHONY: setup
+setup:
 	fvm install ${FLUTTER_VERSION}
 	fvm use -f ${FLUTTER_VERSION}
-
-.PHONY: setup
-setup: .fvm
 
 clean: setup ## Remove build artifacts
 	fvm flutter clean
@@ -42,6 +42,7 @@ endif
 
 build: setup ## Build the package
 	fvm flutter pub get
+	fvm dart run ffigen --config ffi_native.yaml
 	@if [ $(CHECK_GIT) -eq 1 ] && [ -n "$$(git status --porcelain | grep -v '^\?\? ' | grep -v '^A  ')" ]; then \
 		{ echo "Uncommitted changes detected. Failing the build."; \
 		git status --porcelain | grep -v '^\?\? ' | grep -v '^A  ' | cut -c 4-; \
@@ -52,8 +53,29 @@ build: setup ## Build the package
 
 .PHONY: test
 test: build ## Run base unit tests
-	fvm flutter test -r expanded --file-reporter json:coverage/report-duckdb.dart.jsonl \
-		--coverage --branch-coverage --coverage-path coverage/duckdb.dart.lcov
+	mkdir -p coverage/vm
+	# Run VM tests
+	fvm dart test --platform vm --coverage=./coverage/vm --reporter json > coverage/report-duckdb.dart.jsonl
+ifeq ($(RUN_CHROME_TESTS),1)
+	mkdir -p coverage/chrome
+	# Run Chrome tests with additional flags
+	fvm dart test --platform chrome --coverage=./coverage/chrome
+	# Merge and format coverage for both VM and Chrome
+	fvm dart run coverage:format_coverage \
+		-i ./coverage/vm \
+		-i ./coverage/chrome \
+		-o ./coverage/duckdb.dart.lcov \
+		--lcov \
+		--report-on lib/
+else
+	# Format coverage for VM only
+	fvm dart run coverage:format_coverage \
+		-i ./coverage/vm \
+		-o ./coverage/duckdb.dart.lcov \
+		--lcov \
+		--report-on lib/
+endif
+	lcov --remove coverage/duckdb.dart.lcov '*.g.dart' -o coverage/duckdb.dart.lcov
 	lcov --rc lcov_branch_coverage=1 --summary coverage/duckdb.dart.lcov > coverage/duckdb.dart-summary.info
 ifeq ($(BUILD_OS), windows)
 	@powershell -Command "$(PERL) $(GENHTML) --branch-coverage coverage/duckdb.dart.lcov -o coverage/html"

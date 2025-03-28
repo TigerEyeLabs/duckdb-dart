@@ -7,25 +7,25 @@ void main() {
   late Database database;
   late Connection connection;
 
-  setUp(() {
-    database = duckdb.open(":memory:");
-    connection = duckdb.connect(database);
+  setUp(() async {
+    database = await duckdb.open(":memory:");
+    connection = await duckdb.connect(database);
   });
 
-  tearDown(() {
-    connection.dispose();
-    database.dispose();
+  tearDown(() async {
+    await connection.dispose();
+    await database.dispose();
   });
 
   test('fetchAllStream should stream large result sets in batches', () async {
     // Create a large table
-    connection.execute('''
+    await connection.execute('''
       CREATE TABLE numbers AS
       SELECT generate_series AS num
       FROM generate_series(1, 1000);
     ''');
 
-    final result = connection.query('SELECT * FROM numbers');
+    final result = await connection.query('SELECT * FROM numbers');
     var count = 0;
 
     await for (final row in result.fetchAllStream(batchSize: 100)) {
@@ -37,13 +37,13 @@ void main() {
   });
 
   test('fetchAllStream should be cancellable mid-stream', () async {
-    connection.execute('''
+    await connection.execute('''
       CREATE TABLE large_table AS
       SELECT generate_series AS num
       FROM generate_series(1, 1000);
     ''');
 
-    final result = connection.query('SELECT * FROM large_table');
+    final result = await connection.query('SELECT * FROM large_table');
     var count = 0;
 
     await for (final _ in result.fetchAllStream()) {
@@ -55,9 +55,9 @@ void main() {
   });
 
   test('fetchAllStream should handle empty result sets', () async {
-    connection.execute('CREATE TABLE empty_table (id INTEGER)');
+    await connection.execute('CREATE TABLE empty_table (id INTEGER)');
 
-    final result = connection.query('SELECT * FROM empty_table');
+    final result = await connection.query('SELECT * FROM empty_table');
     var count = 0;
 
     await for (final _ in result.fetchAllStream()) {
@@ -68,7 +68,7 @@ void main() {
   });
 
   test('fetchAllStream should handle multiple column types', () async {
-    connection.execute('''
+    await connection.execute('''
       CREATE TABLE mixed_types (
         id INTEGER,
         name TEXT,
@@ -81,7 +81,7 @@ void main() {
         (3, 'Charlie', true, 77.8);
     ''');
 
-    final result = connection.query('SELECT * FROM mixed_types');
+    final result = await connection.query('SELECT * FROM mixed_types');
     final collected = <List<Object?>>[];
 
     await for (final row in result.fetchAllStream()) {
@@ -95,7 +95,7 @@ void main() {
   });
 
   test('fetchAllStream should handle NULL values', () async {
-    connection.execute('''
+    await connection.execute('''
       CREATE TABLE nullable_table (
         id INTEGER,
         name TEXT
@@ -106,7 +106,7 @@ void main() {
         (NULL, 'Charlie');
     ''');
 
-    final result = connection.query('SELECT * FROM nullable_table');
+    final result = await connection.query('SELECT * FROM nullable_table');
     final collected = <List<Object?>>[];
 
     await for (final row in result.fetchAllStream()) {
@@ -120,14 +120,16 @@ void main() {
   });
 
   test('fetchAllStream should handle concurrent streams', () async {
-    connection.execute('''
+    await connection.execute('''
       CREATE TABLE numbers AS
       SELECT generate_series AS num
       FROM generate_series(1, 100);
     ''');
 
-    final result1 = connection.query('SELECT * FROM numbers WHERE num <= 50');
-    final result2 = connection.query('SELECT * FROM numbers WHERE num > 50');
+    final result1 =
+        await connection.query('SELECT * FROM numbers WHERE num <= 50');
+    final result2 =
+        await connection.query('SELECT * FROM numbers WHERE num > 50');
 
     final future1 = result1.fetchAllStream().length;
     final future2 = result2.fetchAllStream().length;
@@ -139,12 +141,11 @@ void main() {
   });
 
   test('fetchAllStream should handle errors gracefully', () async {
-    connection.execute('CREATE TABLE test (id INTEGER)');
+    await connection.execute('CREATE TABLE test (id INTEGER)');
 
     // Invalid SQL should throw
     expect(
-      () => connection
-          .query('SELECT invalid_column FROM test')
+      () async => (await connection.query('SELECT invalid_column FROM test'))
           .fetchAllStream()
           .listen((_) {}),
       throwsA(anything),
@@ -155,7 +156,7 @@ void main() {
       'should efficiently stream large result set using executeAsync and fetchAllStream',
       () async {
     // Create a large table with 100k rows
-    connection.execute('''
+    await connection.execute('''
       CREATE TABLE large_table AS
       SELECT
         generate_series as id,
@@ -165,16 +166,9 @@ void main() {
     ''');
 
     // Prepare a statement that will return a large result set
-    final statement = connection.prepare(
+    final statement = await connection.prepare(
       'SELECT * FROM large_table WHERE id > ? AND id <= ?',
     );
-
-    // Set up progress tracking
-    final progressController = StreamController<double>();
-    final progressUpdates = <double>[];
-    progressController.stream.listen((progress) {
-      progressUpdates.add(progress);
-    });
 
     // Process the data in chunks
     const chunkSize = 10000;
@@ -187,17 +181,14 @@ void main() {
       // Bind parameters for current chunk
       statement.bindParams([start, end]);
 
-      // Execute asynchronously
-      final pendingResult = await statement
-          .executeAsync(progressController: progressController)
-          .valueOrCancellation();
-
-      if (pendingResult == null) {
-        fail('Query was cancelled or failed');
-      }
+      // Execute asynchronously with a cancellation token
+      final token = DuckDBCancellationToken();
+      final pendingResult = await statement.executePending(
+        token: token,
+      );
 
       // Stream the results
-      await for (final row in pendingResult.fetchAllStream(batchSize: 1000)) {
+      await for (final row in pendingResult!.fetchAllStream(batchSize: 1000)) {
         // Verify row structure
         expect(row.length, 3);
         expect(row[0], greaterThan(start));
@@ -222,9 +213,5 @@ void main() {
 
     // Verify results
     expect(processedRows, 100000);
-    expect(progressUpdates, contains(1.0));
-
-    // Clean up
-    await progressController.close();
   });
 }

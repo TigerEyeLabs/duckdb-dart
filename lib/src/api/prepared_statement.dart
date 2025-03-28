@@ -1,8 +1,8 @@
+// ignore_for_file: unintended_html_in_doc_comment
+
 import 'dart:async';
 
-import 'package:async/async.dart';
-import 'package:dart_duckdb/src/api/database_type.dart';
-import 'package:dart_duckdb/src/api/result_set.dart';
+import 'package:dart_duckdb/dart_duckdb.dart';
 
 /// An object reperesenting a DuckDB prepared statement
 ///
@@ -66,7 +66,7 @@ abstract class PreparedStatement {
   ///
   /// Issues the parameterized query to the database using the values previously
   /// bound via the bind methods
-  ResultSet execute();
+  Future<ResultSet> execute({DuckDBCancellationToken? token});
 
   /// Executes the prepared statement asynchronously, and receive progress updates
   ///
@@ -76,13 +76,11 @@ abstract class PreparedStatement {
   ///
   /// Returns: A CancelableOperation<ResultSet?> that completes with the query result
   /// or null if the operation was cancelled.
-  CancelableOperation<ResultSet?> executeAsync({
-    StreamController<double>? progressController,
-  });
+  Future<ResultSet?> executePending({DuckDBCancellationToken? token});
 
   /// Clear the params bound to the prepared statement.
   void clearBinding();
 
   /// Disposes this statement and releases associated memory.
-  void dispose();
+  Future<void> dispose();
 }

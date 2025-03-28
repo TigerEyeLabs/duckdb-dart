@@ -1,36 +1,37 @@
-import 'dart:ffi';
-
 import 'package:dart_duckdb/src/api/appender.dart';
+import 'package:dart_duckdb/src/api/cancellation_token.dart';
 import 'package:dart_duckdb/src/api/prepared_statement.dart';
 import 'package:dart_duckdb/src/api/result_set.dart';
 
-/// An opened duckdb connection with `dart:ffi`.
+/// A DuckDB connection implemented
 abstract class Connection {
-  /// The native database connection handle from duckdb.
-  ///
-  /// This returns a pointer towards the opaque duckdb structure as defined
-  /// [here](https://duckdb.org/docs/api/c/api#duckdb_connect).
-  Pointer<void> get handle;
+  /// The native DuckDB connection handle pointer
+  dynamic get handle;
 
-  /// Perform a database query
-  ResultSet query(String query);
+  /// The id of the connection
+  String? get id;
 
-  /// Executes a sql query ignoring the result
-  void execute(String query);
+  /// Executes a query and returns the result set
+  /// Can be cancelled via token
+  Future<ResultSet> query(String query, {DuckDBCancellationToken? token});
 
-  /// Prepare a sql query
-  PreparedStatement prepare(String query);
+  /// Executes a query without returning results
+  /// Can be cancelled,but not interrupted via token
+  Future<void> execute(String query, {DuckDBCancellationToken? token});
 
-  /// Create an appender for insertion into a table
-  Appender append(String table, String? schema);
+  /// Creates a prepared statement from a query
+  /// Can be cancelled,but not interrupted via token
+  Future<PreparedStatement> prepare(String query);
 
-  /// Get the column names of the table named [table],
-  /// ordered as they are defined in the table's schema.
-  Iterable<String> getColumnOrder(String table);
+  /// Creates an appender for inserting data into a table
+  Future<Appender> append(String table, String? schema);
 
-  /// Interrupt running query
-  void interrupt();
+  /// Gets the ordered column names for a table
+  Future<Iterable<String>> getColumnOrder(String table);
 
-  /// Closes this database and releases associated resources.
-  void dispose();
+  /// Interrupts the currently running operation
+  Future<void> interrupt();
+
+  /// Closes the connection and frees resources
+  Future<void> dispose();
 }

@@ -13,6 +13,12 @@ void main() {
     expect(decimal.shift(1), Decimal.parse('1234.567'));
   });
 
+  test('decimal to big int works', () {
+    expect(Decimal(BigInt.one).toBigInt(), BigInt.one);
+    expect(Decimal(BigInt.from(10)).toBigInt(), BigInt.from(10));
+    expect(Decimal(BigInt.from(100)).toBigInt(), BigInt.from(100));
+  });
+
   group('Decimal', () {
     final decimals = {
       ".0": Decimal.zero,

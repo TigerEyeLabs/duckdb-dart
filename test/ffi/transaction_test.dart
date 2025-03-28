@@ -1,5 +1,7 @@
-// ignore_for_file: avoid_dynamic_calls, avoid_print
+// ignore_for_file: library_annotations
+@TestOn('vm')
 
+import 'dart:developer';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -10,7 +12,7 @@ import 'package:test/test.dart';
 bool shouldLog = false;
 bool memoryOnly = true;
 
-Future<dynamic> runInIsolate(
+Future<List<List<Object?>>> runInIsolate(
   TransferableDatabase transferableDb,
   Function(Connection) operation,
   String name,
@@ -20,21 +22,21 @@ Future<dynamic> runInIsolate(
   final isolate = await Isolate.spawn(
     (message) async {
       final (transferableDb, sendPort) = message;
-      final connection = duckdb.connectWithTransferred(transferableDb);
+      final connection = await duckdb.connectWithTransferred(transferableDb);
       try {
-        if (shouldLog) print('Isolate: Beginning transaction - $name');
-        connection.execute('BEGIN TRANSACTION');
+        if (shouldLog) log('Isolate: Beginning transaction - $name');
+        await connection.execute('BEGIN TRANSACTION');
         final result = await operation(connection);
-        if (shouldLog) print('Isolate: Operation completed - $name');
+        if (shouldLog) log('Isolate: Operation completed - $name');
         await Future.delayed(const Duration(milliseconds: 100));
-        if (shouldLog) print('Isolate: Committing transaction - $name');
-        connection.execute('COMMIT');
-        if (shouldLog) print('Isolate: Transaction committed - $name');
+        if (shouldLog) log('Isolate: Committing transaction - $name');
+        await connection.execute('COMMIT');
+        if (shouldLog) log('Isolate: Transaction committed - $name');
         sendPort.send(result);
       } catch (e, stackTrace) {
         sendPort.send((e, stackTrace));
       } finally {
-        connection.dispose();
+        await connection.dispose();
       }
     },
     (transferableDb, port.sendPort),
@@ -50,7 +52,7 @@ Future<dynamic> runInIsolate(
     Error.throwWithStackTrace(error, stackTrace);
   }
 
-  return result;
+  return result ?? <List<Object?>>[];
 }
 
 void main() {
@@ -58,7 +60,7 @@ void main() {
   late Connection connection;
   late String dbFilePath;
 
-  setUp(() {
+  setUp(() async {
     if (memoryOnly) {
       dbFilePath = ':memory:';
     } else {
@@ -68,14 +70,15 @@ void main() {
           path.join(Directory.systemTemp.path, 'test_db_$timestamp.db');
     }
 
-    database = duckdb.open(dbFilePath);
-    connection = duckdb.connect(database);
-    connection.execute('CREATE TABLE test_table (id INTEGER, value TEXT)');
+    database = await duckdb.open(dbFilePath);
+    connection = await duckdb.connect(database);
+    await connection
+        .execute('CREATE TABLE test_table (id INTEGER, value TEXT)');
   });
 
-  tearDown(() {
-    connection.dispose();
-    database.dispose();
+  tearDown(() async {
+    await connection.dispose();
+    await database.dispose();
 
     if (memoryOnly) return;
 
@@ -88,12 +91,12 @@ void main() {
 
   test('Concurrent INSERT operations on the same table', () async {
     final isolate1 = runInIsolate(
-      database.transferrable,
+      database.transferable,
       (conn) => conn.execute("INSERT INTO test_table VALUES (1, 'isolate1')"),
       "isolate1",
     );
     final isolate2 = runInIsolate(
-      database.transferrable,
+      database.transferable,
       (conn) => conn.execute("INSERT INTO test_table VALUES (2, 'isolate2')"),
       "isolate2",
     );
@@ -101,7 +104,8 @@ void main() {
     await Future.wait([isolate1, isolate2]);
 
     final result =
-        connection.query('SELECT * FROM test_table ORDER BY id').fetchAll();
+        (await connection.query('SELECT * FROM test_table ORDER BY id'))
+            .fetchAll();
     expect(result.length, 2);
     expect(result[0][0], 1);
     expect(result[0][1], 'isolate1');
@@ -111,19 +115,20 @@ void main() {
 
   test('Concurrent INSERT and UPDATE operations on the same table', () async {
     final isolate1 = runInIsolate(
-      database.transferrable,
-      (conn) => conn.execute("INSERT INTO test_table VALUES (1, 'isolate1')"),
+      database.transferable,
+      (conn) async =>
+          conn.execute("INSERT INTO test_table VALUES (1, 'isolate1')"),
       "isolate1",
     );
     final isolate2 = runInIsolate(
-      database.transferrable,
-      (conn) {
-        conn.execute("INSERT INTO test_table VALUES (2, 'isolate2')");
-        conn.execute(
+      database.transferable,
+      (conn) async {
+        await conn.execute("INSERT INTO test_table VALUES (2, 'isolate2')");
+        await conn.execute(
           "UPDATE test_table SET value = 'isolate2_updated' WHERE id = 2",
         );
-        conn.execute("INSERT INTO test_table VALUES (3, 'isolate3')");
-        conn.execute("DELETE FROM test_table WHERE id = 3");
+        await conn.execute("INSERT INTO test_table VALUES (3, 'isolate3')");
+        await conn.execute("DELETE FROM test_table WHERE id = 3");
       },
       "isolate2",
     );
@@ -131,7 +136,8 @@ void main() {
     await Future.wait([isolate1, isolate2]);
 
     final result =
-        connection.query('SELECT * FROM test_table ORDER BY id').fetchAll();
+        (await connection.query('SELECT * FROM test_table ORDER BY id'))
+            .fetchAll();
     expect(result.length, 2);
     expect(result[0][0], 1);
     expect(result[0][1], 'isolate1');
@@ -140,18 +146,19 @@ void main() {
   });
 
   test('Concurrent UPDATE operations on different tables', () async {
-    connection.execute('CREATE TABLE another_table (id INTEGER, value TEXT)');
-    connection.execute("INSERT INTO test_table VALUES (1, 'old1')");
-    connection.execute("INSERT INTO another_table VALUES (1, 'old2')");
+    await connection
+        .execute('CREATE TABLE another_table (id INTEGER, value TEXT)');
+    await connection.execute("INSERT INTO test_table VALUES (1, 'old1')");
+    await connection.execute("INSERT INTO another_table VALUES (1, 'old2')");
 
     final isolate1 = runInIsolate(
-      database.transferrable,
+      database.transferable,
       (conn) =>
           conn.execute("UPDATE test_table SET value = 'new1' WHERE id = 1"),
       "isolate1",
     );
     final isolate2 = runInIsolate(
-      database.transferrable,
+      database.transferable,
       (conn) =>
           conn.execute("UPDATE another_table SET value = 'new2' WHERE id = 1"),
       "isolate2",
@@ -159,29 +166,29 @@ void main() {
 
     await Future.wait([isolate1, isolate2]);
 
-    final result1 = connection
-        .query('SELECT value FROM test_table WHERE id = 1')
-        .fetchAll();
-    final result2 = connection
-        .query('SELECT value FROM another_table WHERE id = 1')
-        .fetchAll();
+    final result1 =
+        (await connection.query('SELECT value FROM test_table WHERE id = 1'))
+            .fetchAll();
+    final result2 =
+        (await connection.query('SELECT value FROM another_table WHERE id = 1'))
+            .fetchAll();
     expect(result1[0][0], 'new1');
     expect(result2[0][0], 'new2');
   });
 
   test('Concurrent UPDATE operations on different rows in the same table',
       () async {
-    connection
+    await connection
         .execute("INSERT INTO test_table VALUES (1, 'old1'), (2, 'old2')");
 
     final isolate1 = runInIsolate(
-      database.transferrable,
+      database.transferable,
       (conn) =>
           conn.execute("UPDATE test_table SET value = 'new1' WHERE id = 1"),
       "isolate1",
     );
     final isolate2 = runInIsolate(
-      database.transferrable,
+      database.transferable,
       (conn) =>
           conn.execute("UPDATE test_table SET value = 'new2' WHERE id = 2"),
       "isolate2",
@@ -190,31 +197,34 @@ void main() {
     await Future.wait([isolate1, isolate2]);
 
     final result =
-        connection.query('SELECT * FROM test_table ORDER BY id').fetchAll();
+        (await connection.query('SELECT * FROM test_table ORDER BY id'))
+            .fetchAll();
     expect(result.length, 2);
     expect(result[0][1], 'new1');
     expect(result[1][1], 'new2');
   });
 
   test('Concurrent SELECT operations on different rows', () async {
-    connection
+    await connection
         .execute("INSERT INTO test_table VALUES (1, 'value1'), (2, 'value2')");
 
     final isolate1 = runInIsolate(
-      database.transferrable,
-      (conn) {
+      database.transferable,
+      (conn) async {
         final result =
-            conn.query("SELECT * FROM test_table WHERE id = 1").fetchAll();
+            (await conn.query("SELECT * FROM test_table WHERE id = 1"))
+                .fetchAll();
         return result;
       },
       "isolate1",
     );
 
     final isolate2 = runInIsolate(
-      database.transferrable,
-      (conn) {
+      database.transferable,
+      (conn) async {
         final result =
-            conn.query("SELECT * FROM test_table WHERE id = 2").fetchAll();
+            (await conn.query("SELECT * FROM test_table WHERE id = 2"))
+                .fetchAll();
         return result;
       },
       "isolate2",
@@ -231,38 +241,40 @@ void main() {
 
   test('Concurrent DELETE operations on different rows in same table',
       () async {
-    connection
+    await connection
         .execute("INSERT INTO test_table VALUES (1, 'value1'), (2, 'value2')");
 
     final isolate1 = runInIsolate(
-      database.transferrable,
+      database.transferable,
       (conn) => conn.execute("DELETE FROM test_table WHERE id = 1"),
       "isolate1",
     );
 
     final isolate2 = runInIsolate(
-      database.transferrable,
+      database.transferable,
       (conn) => conn.execute("DELETE FROM test_table WHERE id = 2"),
       "isolate2",
     );
 
     await Future.wait([isolate1, isolate2]);
 
-    final result = connection.query('SELECT * FROM test_table').fetchAll();
+    final result =
+        (await connection.query('SELECT * FROM test_table')).fetchAll();
     expect(result.isEmpty, true);
   });
 
   test('Concurrent INSERT operations into different tables', () async {
-    connection.execute('CREATE TABLE another_table (id INTEGER, value TEXT)');
+    await connection
+        .execute('CREATE TABLE another_table (id INTEGER, value TEXT)');
 
     final isolate1 = runInIsolate(
-      database.transferrable,
+      database.transferable,
       (conn) => conn.execute("INSERT INTO test_table VALUES (1, 'isolate1')"),
       "isolate1",
     );
 
     final isolate2 = runInIsolate(
-      database.transferrable,
+      database.transferable,
       (conn) =>
           conn.execute("INSERT INTO another_table VALUES (2, 'isolate2')"),
       "isolate2",
@@ -270,8 +282,10 @@ void main() {
 
     await Future.wait([isolate1, isolate2]);
 
-    final result1 = connection.query('SELECT * FROM test_table').fetchAll();
-    final result2 = connection.query('SELECT * FROM another_table').fetchAll();
+    final result1 =
+        (await connection.query('SELECT * FROM test_table')).fetchAll();
+    final result2 =
+        (await connection.query('SELECT * FROM another_table')).fetchAll();
 
     expect(result1.length, 1);
     expect(result1[0][0], 1);
@@ -284,15 +298,16 @@ void main() {
 
   test('Concurrent INSERT INTO SELECT operations on same destination table',
       () async {
-    connection.execute('CREATE TABLE source_table (id INTEGER, value TEXT)');
-    connection.execute(
+    await connection
+        .execute('CREATE TABLE source_table (id INTEGER, value TEXT)');
+    await connection.execute(
       "INSERT INTO source_table VALUES (1, 'source1'), (2, 'source2')",
     );
-    connection
+    await connection
         .execute('CREATE TABLE destination_table (id INTEGER, value TEXT)');
 
     final isolate1 = runInIsolate(
-      database.transferrable,
+      database.transferable,
       (conn) => conn.execute(
         "INSERT INTO destination_table SELECT * FROM source_table WHERE id = 1",
       ),
@@ -300,7 +315,7 @@ void main() {
     );
 
     final isolate2 = runInIsolate(
-      database.transferrable,
+      database.transferable,
       (conn) => conn.execute(
         "INSERT INTO destination_table SELECT * FROM source_table WHERE id = 2",
       ),
@@ -309,9 +324,9 @@ void main() {
 
     await Future.wait([isolate1, isolate2]);
 
-    final result = connection
-        .query('SELECT * FROM destination_table ORDER BY id')
-        .fetchAll();
+    final result =
+        (await connection.query('SELECT * FROM destination_table ORDER BY id'))
+            .fetchAll();
     expect(result.length, 2);
     expect(result[0][1], 'source1');
     expect(result[1][1], 'source2');
@@ -319,9 +334,9 @@ void main() {
 
   test('Concurrent append operations using appenders', () async {
     final isolate1 = runInIsolate(
-      database.transferrable,
-      (conn) {
-        final appender = conn.append('test_table', null);
+      database.transferable,
+      (conn) async {
+        final appender = await conn.append('test_table', null);
         for (var i = 0; i < 500; i++) {
           appender.append(i);
           appender.append('isolate1_$i');
@@ -334,9 +349,9 @@ void main() {
     );
 
     final isolate2 = runInIsolate(
-      database.transferrable,
-      (conn) {
-        final appender = conn.append('test_table', null);
+      database.transferable,
+      (conn) async {
+        final appender = await conn.append('test_table', null);
         for (var i = 500; i < 1000; i++) {
           appender.append(i);
           appender.append('isolate2_$i');
@@ -351,48 +366,52 @@ void main() {
     await Future.wait([isolate1, isolate2]);
 
     final result =
-        connection.query('SELECT COUNT(*) FROM test_table').fetchAll();
+        (await connection.query('SELECT COUNT(*) FROM test_table')).fetchAll();
     expect(result[0][0], 1000);
 
     final sample1 =
-        connection.query('SELECT * FROM test_table WHERE id = 250').fetchAll();
+        (await connection.query('SELECT * FROM test_table WHERE id = 250'))
+            .fetchAll();
     expect(sample1[0][0], 250);
     expect(sample1[0][1], 'isolate1_250');
 
     final sample2 =
-        connection.query('SELECT * FROM test_table WHERE id = 750').fetchAll();
+        (await connection.query('SELECT * FROM test_table WHERE id = 750'))
+            .fetchAll();
     expect(sample2[0][0], 750);
     expect(sample2[0][1], 'isolate2_750');
   });
 
   test('Concurrent operations with prepared statements using execute()',
       () async {
-    connection.execute(
+    await connection.execute(
       'CREATE TABLE prepared_test (id INTEGER, value TEXT, number DOUBLE)',
     );
 
     final isolate1 = runInIsolate(
-      database.transferrable,
-      (conn) {
-        final stmt = conn.prepare('INSERT INTO prepared_test VALUES (?, ?, ?)');
+      database.transferable,
+      (conn) async {
+        final stmt =
+            await conn.prepare('INSERT INTO prepared_test VALUES (?, ?, ?)');
         for (var i = 0; i < 500; i++) {
           stmt.bindParams([i, 'value_$i', i * 1.5]);
-          stmt.execute();
+          await stmt.execute();
         }
-        stmt.dispose();
+        await stmt.dispose();
       },
       "isolate1",
     );
 
     final isolate2 = runInIsolate(
-      database.transferrable,
-      (conn) {
-        final stmt = conn.prepare('INSERT INTO prepared_test VALUES (?, ?, ?)');
+      database.transferable,
+      (conn) async {
+        final stmt =
+            await conn.prepare('INSERT INTO prepared_test VALUES (?, ?, ?)');
         for (var i = 500; i < 1000; i++) {
           stmt.bindParams([i, 'value_$i', i * 1.5]);
-          stmt.execute();
+          await stmt.execute();
         }
-        stmt.dispose();
+        await stmt.dispose();
       },
       "isolate2",
     );
@@ -400,19 +419,20 @@ void main() {
     await Future.wait([isolate1, isolate2]);
 
     final result =
-        connection.query('SELECT COUNT(*) FROM prepared_test').fetchAll();
+        (await connection.query('SELECT COUNT(*) FROM prepared_test'))
+            .fetchAll();
     expect(result[0][0], 1000);
 
-    final sample1 = connection
-        .query('SELECT * FROM prepared_test WHERE id = 250')
-        .fetchAll();
+    final sample1 =
+        (await connection.query('SELECT * FROM prepared_test WHERE id = 250'))
+            .fetchAll();
     expect(sample1[0][0], 250);
     expect(sample1[0][1], 'value_250');
     expect(sample1[0][2], 375.0);
 
-    final sample2 = connection
-        .query('SELECT * FROM prepared_test WHERE id = 750')
-        .fetchAll();
+    final sample2 =
+        (await connection.query('SELECT * FROM prepared_test WHERE id = 750'))
+            .fetchAll();
     expect(sample2[0][0], 750);
     expect(sample2[0][1], 'value_750');
     expect(sample2[0][2], 1125.0);
@@ -420,17 +440,17 @@ void main() {
 
   group('conflict scenarios', () {
     test('Concurrent UPDATE operations on the same row', () async {
-      connection.execute("INSERT INTO test_table VALUES (1, 'old')");
+      await connection.execute("INSERT INTO test_table VALUES (1, 'old')");
 
       final isolate1 = runInIsolate(
-        database.transferrable,
+        database.transferable,
         (conn) =>
             conn.execute("UPDATE test_table SET value = 'new1' WHERE id = 1"),
         "isolate1",
       );
 
       final isolate2 = runInIsolate(
-        database.transferrable,
+        database.transferable,
         (conn) =>
             conn.execute("UPDATE test_table SET value = 'new2' WHERE id = 1"),
         "isolate2",
@@ -445,16 +465,16 @@ void main() {
     test(
         'Concurrent DELETE operations on the same row with conflicting transactions',
         () async {
-      connection.execute("INSERT INTO test_table VALUES (1, 'value1')");
+      await connection.execute("INSERT INTO test_table VALUES (1, 'value1')");
 
       final isolate1 = runInIsolate(
-        database.transferrable,
+        database.transferable,
         (conn) => conn.execute("DELETE FROM test_table WHERE id = 1"),
         "isolate1",
       );
 
       final isolate2 = runInIsolate(
-        database.transferrable,
+        database.transferable,
         (conn) => conn.execute("DELETE FROM test_table WHERE id = 1"),
         "isolate2",
       );
@@ -467,14 +487,14 @@ void main() {
 
     test('Concurrent ALTER TABLE operations adding new columns', () async {
       final isolate1 = runInIsolate(
-        database.transferrable,
+        database.transferable,
         (conn) => conn
             .execute("ALTER TABLE test_table ADD COLUMN new_column INTEGER"),
         "isolate1",
       );
 
       final isolate2 = runInIsolate(
-        database.transferrable,
+        database.transferable,
         (conn) => conn
             .execute("ALTER TABLE test_table ADD COLUMN another_column TEXT"),
         "isolate2",
@@ -488,15 +508,15 @@ void main() {
 
     test('Concurrent INSERT operations violating unique primary key constraint',
         () async {
-      connection.execute('DROP TABLE IF EXISTS test_table');
-      connection.execute(
+      await connection.execute('DROP TABLE IF EXISTS test_table');
+      await connection.execute(
         'CREATE TABLE test_table (id INTEGER PRIMARY KEY, value TEXT)',
       );
 
       final isolate1 = runInIsolate(
-        database.transferrable,
+        database.transferable,
         (conn) async {
-          conn.execute("INSERT INTO test_table VALUES (1, 'isolate1')");
+          await conn.execute("INSERT INTO test_table VALUES (1, 'isolate1')");
           // Simulate a longer-running transaction
           await Future.delayed(const Duration(seconds: 1));
         },
@@ -507,7 +527,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 100));
 
       final isolate2 = runInIsolate(
-        database.transferrable,
+        database.transferable,
         (conn) => conn.execute("INSERT INTO test_table VALUES (1, 'isolate2')"),
         "isolate2",
       );

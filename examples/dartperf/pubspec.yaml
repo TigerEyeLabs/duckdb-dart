@@ -1,0 +1,13 @@
+name: dartperf
+description: A sample command-line application.
+version: 1.0.0
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+
+dependencies:
+  dart_duckdb:
+    path: ../../
+
+dev_dependencies:
+  lints: ^2.0.0

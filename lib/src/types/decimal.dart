@@ -39,6 +39,20 @@ class Decimal implements Comparable<Decimal> {
     }
   }
 
+  BigInt toBigInt() {
+    if (_scale > 0) {
+      throw UnsupportedError(
+        'Cannot convert Decimal because we will be losing precision.',
+      );
+    }
+
+    if (scale == 0) {
+      return _number;
+    }
+
+    return _number * BigInt.from(pow(10, _scale * -1));
+  }
+
   static const _dot = 0x2e; // '.'
   static const _zero = 0x30; // '0'
   static const _minus = 0x2d; // '-'

@@ -1,19 +1,13 @@
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:dart_duckdb/src/ffi/ffi.dart';
+import 'package:dart_duckdb/src/api/open.dart';
 import 'package:meta/meta.dart';
 
-/// Signature responsible for loading the dynamic duckdb library to use.
-typedef OpenLibrary = DynamicLibrary Function();
+/// Signature responsible for loading the dynamic DuckDB library.
+typedef OpenLibraryLoader = DynamicLibrary Function();
 
-enum OperatingSystem { android, iOS, macOS, windows, linux }
-
-/// The instance managing different approaches to load the [DynamicLibrary] for
-/// duckdb when needed. See the documentation for [OpenDynamicLibrary] to learn
-/// how the default opening behavior can be overridden.
-final OpenDynamicLibrary open = OpenDynamicLibrary._();
-
+/// Default open method for duckdb bundled in an application
 DynamicLibrary _defaultOpen() {
   if (Platform.isAndroid) {
     return DynamicLibrary.open('libduckdb.so');
@@ -23,7 +17,7 @@ DynamicLibrary _defaultOpen() {
     DynamicLibrary result;
     result = DynamicLibrary.process();
 
-    if (duckDbIsLoaded(result)) {
+    if (_duckDbIsLoaded(result)) {
       return result;
     }
   } else if (Platform.isWindows) {
@@ -31,7 +25,7 @@ DynamicLibrary _defaultOpen() {
   } else if (Platform.isLinux) {
     // Will look in LD_LIBRARY_PATH
     final result = DynamicLibrary.open('libduckdb.so');
-    if (duckDbIsLoaded(result)) {
+    if (_duckDbIsLoaded(result)) {
       return result;
     }
   }
@@ -39,7 +33,7 @@ DynamicLibrary _defaultOpen() {
   throw UnsupportedError('Unsupported platform: ${Platform.operatingSystem}');
 }
 
-bool isTestEnvironment() {
+bool _isTestEnvironment() {
   if (Platform.environment.containsKey('FLUTTER_TEST')) {
     return true;
   }
@@ -55,7 +49,7 @@ bool isTestEnvironment() {
   return inTest;
 }
 
-bool duckDbIsLoaded(DynamicLibrary lib) =>
+bool _duckDbIsLoaded(DynamicLibrary lib) =>
     lib.providesSymbol('duckdb_library_version');
 
 /// Manages functions that define how to load the [DynamicLibrary] for DuckDB.
@@ -67,9 +61,8 @@ bool duckDbIsLoaded(DynamicLibrary lib) =>
 /// The default behavior can be overridden for a specific OS by using
 /// [overrideFor]. To override the behavior on all platforms, use
 /// [overrideForAll].
-class OpenDynamicLibrary {
-  final Map<OperatingSystem, OpenLibrary> _overriddenPlatforms = {};
-  OpenLibrary? _overriddenForAll;
+class OpenDynamicLibrary extends OpenLibrary {
+  final Map<OperatingSystem, OpenLibraryLoader> _overriddenPlatforms = {};
 
   OpenDynamicLibrary._();
 
@@ -94,7 +87,8 @@ class OpenDynamicLibrary {
       return process;
     }
 
-    if (isTestEnvironment()) {
+    /// If we are in a test environment, we will load the library from the package.
+    if (_isTestEnvironment()) {
       final prefix = '${Directory.current.path}/../duckdb';
 
       if (_overriddenPlatforms[OperatingSystem.windows] == null) {
@@ -118,11 +112,6 @@ class OpenDynamicLibrary {
     }
 
     try {
-      final forAll = _overriddenForAll;
-      if (forAll != null) {
-        return forAll();
-      }
-
       final forPlatform = _overriddenPlatforms[os];
       if (forPlatform != null) {
         return forPlatform();
@@ -142,24 +131,20 @@ class OpenDynamicLibrary {
   ///
   /// When using the asynchronous API over isolates, [open] __must be__ a top-
   /// level function or a static method.
-  void overrideFor(OperatingSystem os, OpenLibrary open) {
-    _overriddenPlatforms[os] = open;
-  }
-
-  /// Makes `duckdb.dart` use the [OpenLibrary] function for all Dart platforms.
-  /// If this method has been called, it takes precedence over [overrideFor].
-  /// This method must be called before opening any database.
-  ///
-  /// When using the asynchronous API over isolates, [open] __must be__ a top-
-  /// level function or a static method.
-  void overrideForAll(OpenLibrary open) {
-    _overriddenForAll = open;
+  @override
+  void overrideFor(OperatingSystem os, String path) {
+    _overriddenPlatforms[os] = () => DynamicLibrary.open(path);
   }
 
   /// Clears all associated open helpers for all platforms.
   @visibleForTesting
+  @override
   void reset() {
-    _overriddenForAll = null;
     _overriddenPlatforms.clear();
   }
 }
+
+/// The instance managing different approaches to load the [DynamicLibrary] for
+/// duckdb when needed. See the documentation for [OpenDynamicLibrary] to learn
+/// how the default opening behavior can be overridden.
+final OpenLibrary open = OpenDynamicLibrary._();
