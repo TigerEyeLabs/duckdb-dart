@@ -1,11 +1,9 @@
-import 'dart:ffi';
-
 /// An open DuckDB database using `dart:ffi`.
 abstract class Appender {
   /// The native appender handle from DuckDB.
   ///
   /// This returns a pointer to the opaque DuckDB structure as defined in the FFI.
-  Pointer<void> get handle;
+  dynamic get handle;
 
   /// Closes the appender and releases associated resources.
   void dispose();
@@ -19,7 +17,7 @@ abstract class Appender {
   /// @param value: The value to append.
   /// @throws DuckDBException if a value of this type was not expected
   /// in the appender's current state.
-  void append(dynamic value);
+  void append(Object? value);
 
   /// Marks the end of the current row.
   ///

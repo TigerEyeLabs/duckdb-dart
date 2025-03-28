@@ -5,19 +5,19 @@ void main() {
   late Database database;
   late Connection connection;
 
-  setUp(() {
-    database = duckdb.open(":memory:");
-    connection = duckdb.connect(database);
+  setUp(() async {
+    database = await duckdb.open(":memory:");
+    connection = await duckdb.connect(database);
   });
 
-  tearDown(() {
-    connection.dispose();
-    database.dispose();
+  tearDown(() async {
+    await connection.dispose();
+    await database.dispose();
   });
 
-  test('error should be an exception', () {
+  test('error should be an exception', () async {
     try {
-      connection.execute("select error('this is my error')");
+      await connection.execute("select error('this is my error')");
     } catch (e) {
       expect(e, isA<DuckDBException>());
       expect(
@@ -27,9 +27,9 @@ void main() {
     }
   });
 
-  test('conversion error', () {
+  test('conversion error', () async {
     try {
-      connection.execute("select 'hello'::int");
+      await connection.execute("select 'hello'::int");
     } catch (e) {
       expect(e, isA<DuckDBException>());
     }

@@ -1,4 +1,9 @@
-import 'package:dart_duckdb/src/ffi/ffi.dart';
+// ignore: library_annotations
+@TestOn('vm')
+
+import 'dart:ffi';
+
+import 'package:dart_duckdb/src/ffi/impl/utils.dart';
 import 'package:test/test.dart';
 
 void main() {

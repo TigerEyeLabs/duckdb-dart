@@ -28,6 +28,7 @@ apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 34
+    namespace 'com.tigereye.duckdb_libs'
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -54,8 +55,8 @@ android {
 def jniLibsDir = "$projectDir/src/main/jniLibs"
 
 def zipFiles = [
-    'arm64-v8a': 'https://github.com/TigerEyeLabs/duckdb-dart/releases/download/v1.1.3/libduckdb-android_arm64-v8a.zip',
-    'armeabi-v7a': 'https://github.com/TigerEyeLabs/duckdb-dart/releases/download/v1.1.3/libduckdb-android_armeabi-v7a.zip'
+    'arm64-v8a': 'https://github.com/TigerEyeLabs/duckdb-dart/releases/download/v1.2.0/libduckdb-android_arm64-v8a.zip',
+    'armeabi-v7a': 'https://github.com/TigerEyeLabs/duckdb-dart/releases/download/v1.2.0/libduckdb-android_armeabi-v7a.zip'
 ]
 
 task downloadAndExtractDuckDB {

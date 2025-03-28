@@ -97,47 +97,25 @@ Here are some common use cases for DuckDB.Dart:
 ```dart
 import 'package:dart_duckdb/dart_duckdb.dart';
 
-void main() {
-  final db = duckdb.open(":memory:");
-  final connection = duckdb.connect(db);
+void main() async {
+  final db = await duckdb.open(":memory:");
+  final connection = await duckdb.connect(db);
 
-  connection.execute('''
+  await connection.execute('''
     CREATE TABLE users (id INTEGER, name VARCHAR, age INTEGER);
     INSERT INTO users VALUES (1, 'Alice', 30), (2, 'Bob', 25);
   ''');
 
-  final result = connection.query("SELECT * FROM users WHERE age > 28").fetchAll();
+  final result = await connection.query("SELECT * FROM users WHERE age > 28");
+  final rows = result.fetchAll();
 
-  for (final row in result) {
+  for (final row in rows) {
     print(row);
   }
 
   connection.dispose();
   db.dispose();
 }
-```
-
-### Queries on background Isolates
-
-```dart
-import 'package:dart_duckdb/dart_duckdb.dart';
-
-void main() {
-  final db = duckdb.open(":memory:");
-  final connection = duckdb.connect(db);
-
-  await Isolate.spawn(backgroundTask, db.transferrable);
-
-  connection.dispose();
-  db.dispose();
-}
-
-void backgroundTask(TransferableDatabase transferableDb) {
-  final connection = duckdb.connectWithTransferred(transferableDb);
-  // Access database ...
-  // fetch is needed to send the data back to the main isolate
-}
-
 ```
 
 ## Contributing

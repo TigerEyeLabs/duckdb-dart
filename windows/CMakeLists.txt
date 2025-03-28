@@ -28,7 +28,7 @@ target_include_directories(${PLUGIN_NAME} INTERFACE
 target_link_libraries(${PLUGIN_NAME} PRIVATE flutter flutter_wrapper_plugin)
 
 set(PREBUILT_RELEASE_DUCKDB_DLL "${CMAKE_CURRENT_SOURCE_DIR}/Libraries/release/duckdb.dll")
-set(DUCKDB_DOWNLOAD_URL "https://github.com/duckdb/duckdb/releases/download/v1.1.3/libduckdb-windows-amd64.zip")
+set(DUCKDB_DOWNLOAD_URL "https://github.com/duckdb/duckdb/releases/download/v1.2.1/libduckdb-windows-amd64.zip")
 set(DUCKDB_DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/duckdb_download")
 set(DUCKDB_ZIP_FILE "${DUCKDB_DOWNLOAD_DIR}/libduckdb-windows-amd64.zip")
 
@@ -77,5 +77,6 @@ message(STATUS "DuckDB DLL installed to: ${RELEASE_OUTPUT_DIR}/duckdb.dll")
 set(dart_duckdb_bundled_libraries
   "$<$<CONFIG:Debug>:${RELEASE_OUTPUT_DIR}/duckdb.dll>"
   "$<$<CONFIG:Release>:${RELEASE_OUTPUT_DIR}/duckdb.dll>"
+  "$<$<CONFIG:Profile>:${RELEASE_OUTPUT_DIR}/duckdb.dll>"
   PARENT_SCOPE
 )

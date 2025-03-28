@@ -5,7 +5,7 @@ param (
 )
 
 # Define variables
-$VERSION = "v1.1.3"
+$VERSION = "v1.2.1"
 $DUCKDB_REPO = "https://github.com/duckdb/duckdb"
 $DUCKDB_DIR = "duckdb"
 $BUILD_DIR = Join-Path $DUCKDB_DIR "build"

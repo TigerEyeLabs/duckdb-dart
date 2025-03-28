@@ -1,5 +1,5 @@
 PODS:
-  - dart_duckdb (1.1.3):
+  - dart_duckdb (1.2.0):
     - Flutter
   - DKImagePickerController/Core (4.3.9):
     - DKImagePickerController/ImageDataManager

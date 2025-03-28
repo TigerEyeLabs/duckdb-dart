@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:isolate';
-import 'package:flutter/material.dart';
+
 import 'package:dart_duckdb/dart_duckdb.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 void main() {
   runApp(MyApp());
@@ -27,8 +29,8 @@ class SqlExecutorPage extends StatefulWidget {
 }
 
 typedef QueryResponse = ({
-  List<String> columns,
-  List<List<dynamic>> rows,
+  List<String>? columns,
+  List<List<Object?>>? rows,
   int totalRows,
 });
 
@@ -61,9 +63,9 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
     _openInMemoryDatabase();
   }
 
-  void _openInMemoryDatabase() {
-    _database = duckdb.open(':memory:');
-    _connection = duckdb.connect(_database!);
+  Future<void> _openInMemoryDatabase() async {
+    _database = await duckdb.open(':memory:');
+    _connection = await duckdb.connect(_database!);
     setState(() {});
   }
 
@@ -79,8 +81,8 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
       _connection?.dispose();
       _database?.dispose();
 
-      _database = duckdb.open(filePath);
-      _connection = duckdb.connect(_database!);
+      _database = await duckdb.open(filePath);
+      _connection = await duckdb.connect(_database!);
       setState(() {});
     }
   }
@@ -92,36 +94,46 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
           _offset = 0;
         }
 
-        final completer = Completer<void>();
-        final receivePort = ReceivePort();
-
         final stopwatch = Stopwatch()..start();
-
         String query = _sqlController.text.trim();
-        query =
-            query.replaceAll(RegExp(r';+$'), ''); // Remove trailing semicolons
+        // Remove trailing semicolons
+        query = query.replaceAll(RegExp(r';+$'), '');
 
         String countQuery = '';
         if (query.toLowerCase().startsWith('select')) {
-          countQuery = 'SELECT COUNT(*) FROM (${query}) AS count_query';
-          query += " LIMIT $_limit OFFSET $_offset";
+          countQuery = 'SELECT COUNT(*) FROM ($query) AS count_query';
+          query += ' LIMIT $_limit OFFSET $_offset';
         }
 
-        await Isolate.spawn(
-          _backgroundQueryTask,
-          _QueryTaskParams(
-            transferableDb: _database!.transferrable,
-            query: query,
-            countQuery: countQuery,
-            sendPort: receivePort.sendPort,
-          ),
+        // Create the task parameters
+        final taskParams = _QueryTaskParams(
+          transferableDb: _database!.transferable,
+          query: query,
+          countQuery: countQuery,
+          sendPort: null,
         );
 
+        // We’ll reuse the Completer to track when we’ve updated UI
+        final completer = Completer<void>();
+
+        // ----------------------------------------------------------
+        // NATIVE path: spawn an isolate
+        // ----------------------------------------------------------
+        final receivePort = ReceivePort();
+        // Pass the real SendPort so isolate can communicate back
+        final isolateParams = taskParams.copyWith(
+          sendPort: receivePort.sendPort,
+        );
+
+        await Isolate.spawn<_QueryTaskParams>(
+            _backgroundQueryTask, isolateParams);
+
+        // Listen for isolate results
         receivePort.listen((dynamic message) {
           if (message is QueryResponse) {
             setState(() {
-              _columnNames = message.columns;
-              _rows = message.rows;
+              _columnNames = message.columns ?? [];
+              _rows = message.rows ?? [[]];
               _totalRows = message.totalRows;
               stopwatch.stop();
               _executionTimeController.text =
@@ -148,41 +160,70 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
     }
   }
 
-  static void _backgroundQueryTask(_QueryTaskParams params) {
+  Future<QueryResponse> _backgroundQueryTaskDirect(
+      _QueryTaskParams params) async {
+    final results = await _connection?.query(params.query);
+    final columns = results?.columnNames;
+    final rows = results?.fetchAll();
+
+    int totalRows = 0;
+
+    if (params.countQuery.isNotEmpty) {
+      final countResults = await _connection?.query(params.countQuery);
+      final count = countResults?.fetchAll();
+      if (count?.first.first != null) {
+        var countValue = count!.first.first;
+        if (countValue is int) {
+          totalRows = countValue;
+        } else if (countValue is BigInt) {
+          totalRows = countValue.toInt();
+        }
+      }
+    }
+
+    return ((
+      columns: columns,
+      rows: rows,
+      totalRows: totalRows,
+    ));
+  }
+
+  static void _backgroundQueryTask(_QueryTaskParams params) async {
     try {
-      final connection = duckdb.connectWithTransferred(params.transferableDb);
-      final results = connection.query(params.query);
+      final connection =
+          await duckdb.connectWithTransferred(params.transferableDb);
+      final results = await connection.query(params.query);
       final columns = results.columnNames;
       final rows = results.fetchAll();
 
       int totalRows = 0;
       if (params.countQuery.isNotEmpty) {
-        final countResults = connection.query(params.countQuery);
+        final countResults = await connection.query(params.countQuery);
         totalRows = countResults.fetchAll().first.first as int;
       }
 
-      params.sendPort.send((
+      params.sendPort!.send((
         columns: columns,
         rows: rows,
         totalRows: totalRows,
       ));
     } catch (e) {
-      params.sendPort.send(e.toString());
+      params.sendPort!.send(e.toString());
     }
   }
 
-  void _loadNextPage() {
+  Future<void> _loadNextPage() async {
     setState(() {
       _offset += _limit;
     });
-    _executeQuery(resetOffset: false);
+    await _executeQuery(resetOffset: false);
   }
 
-  void _loadPreviousPage() {
+  Future<void> _loadPreviousPage() async {
     setState(() {
       _offset = (_offset - _limit).clamp(0, _offset);
     });
-    _executeQuery(resetOffset: false);
+    await _executeQuery(resetOffset: false);
   }
 
   @override
@@ -283,8 +324,12 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
         _columnNames.map((key) => DataColumn(label: Text(key))).toList();
 
     List<DataRow> rows = _rows.map((row) {
+      // Create a cell for each column
       return DataRow(
-        cells: row.map((value) => DataCell(Text(value.toString()))).toList(),
+        cells: row.map((value) {
+          String displayValue = value?.toString() ?? 'NULL';
+          return DataCell(Text(displayValue));
+        }).toList(),
       );
     }).toList();
 
@@ -312,12 +357,21 @@ class _QueryTaskParams {
   final TransferableDatabase transferableDb;
   final String query;
   final String countQuery;
-  final SendPort sendPort;
+  final SendPort? sendPort;
 
   _QueryTaskParams({
     required this.transferableDb,
     required this.query,
     required this.countQuery,
-    required this.sendPort,
+    this.sendPort,
   });
+
+  _QueryTaskParams copyWith({SendPort? sendPort}) {
+    return _QueryTaskParams(
+      transferableDb: this.transferableDb,
+      query: this.query,
+      countQuery: this.countQuery,
+      sendPort: sendPort ?? this.sendPort,
+    );
+  }
 }

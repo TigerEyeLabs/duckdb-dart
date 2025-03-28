@@ -8,3 +8,18 @@ class DuckDBException implements Exception {
     return message;
   }
 }
+
+class DuckDBCancelledException implements Exception {
+  /// The SQL query that was cancelled
+  final String? sql;
+
+  DuckDBCancelledException([this.sql]);
+
+  @override
+  String toString() {
+    if (sql != null) {
+      return 'Operation was cancelled: $sql';
+    }
+    return 'Operation was cancelled';
+  }
+}

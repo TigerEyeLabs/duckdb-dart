@@ -5,19 +5,19 @@ void main() {
   late Database database;
   late Connection connection;
 
-  setUp(() {
-    database = duckdb.open(":memory:");
-    connection = duckdb.connect(database);
+  setUp(() async {
+    database = await duckdb.open(":memory:");
+    connection = await duckdb.connect(database);
   });
 
-  tearDown(() {
-    connection.dispose();
-    database.dispose();
+  tearDown(() async {
+    await connection.dispose();
+    await database.dispose();
   });
 
-  test('simple struct', () {
-    final results = connection
-        .query("SELECT {int_field: 5, varchar_field: 'foo'} as struct")
+  test('simple struct', () async {
+    final results = (await connection
+            .query("SELECT {int_field: 5, varchar_field: 'foo'} as struct"))
         .fetchAll();
 
     final struct = results[0][0]! as Map<String, dynamic>;
@@ -25,11 +25,10 @@ void main() {
     expect(struct['varchar_field'], 'foo');
   });
 
-  test('multiple rows', () {
-    final results = connection
-        .query(
-          "SELECT {int_field: range, varchar_field: 'foo'} as struct FROM RANGE(1, 3)",
-        )
+  test('multiple rows', () async {
+    final results = (await connection.query(
+      "SELECT {int_field: range, varchar_field: 'foo'} as struct FROM RANGE(1, 3)",
+    ))
         .fetchAll();
 
     final struct1 = results[0][0]! as Map<String, dynamic>;
@@ -40,11 +39,10 @@ void main() {
     expect(struct2['varchar_field'], 'foo');
   });
 
-  test('nested struct', () {
-    final results = connection
-        .query(
-          "SELECT {int_field: 5, nested_struct: {value1: 24, value2: 42}} as struct",
-        )
+  test('nested struct', () async {
+    final results = (await connection.query(
+      "SELECT {int_field: 5, nested_struct: {value1: 24, value2: 42}} as struct",
+    ))
         .fetchAll();
 
     final struct = results[0][0]! as Map<String, dynamic>;
@@ -55,8 +53,8 @@ void main() {
     expect(nestedStruct['value2'], 42);
   });
 
-  test('Struct of structs with NULL values', () {
-    final results = connection.query(
+  test('Struct of structs with NULL values', () async {
+    final results = (await connection.query(
       """
         SELECT [{'birds':
             {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'},
@@ -72,7 +70,8 @@ void main() {
             {'yes':'frog', 'maybe': 'salamander', 'huh': 'dragon', 'no':'toad'}
         }];
       """,
-    ).fetchAll();
+    ))
+        .fetchAll();
 
     expect(results[0][0], [
       {
@@ -108,8 +107,8 @@ void main() {
     ]);
   });
 
-  test('Struct of lists of structs of lists of structs', () {
-    final results = connection.query(
+  test('Struct of lists of structs of lists of structs', () async {
+    final results = (await connection.query(
       """
       SELECT [
             {'column_name': 'close_date', 'column_title': NULL, 'old_value': '2024-11-01', 'another_value': '2024-10-31'},
@@ -123,7 +122,8 @@ void main() {
             {'column_name': 'next_step_details', 'column_title': NULL, 'old_value': 'follow up demo w/ Janis and JJim', 'another_value': 'signature'},
         ];
         """,
-    ).fetchAll();
+    ))
+        .fetchAll();
 
     expect(results[0][0], [
       {

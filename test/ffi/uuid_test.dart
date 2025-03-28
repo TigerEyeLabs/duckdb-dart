@@ -1,26 +1,29 @@
+// ignore: library_annotations
+@TestOn('vm')
+
 import 'package:dart_duckdb/dart_duckdb.dart';
 import 'package:test/test.dart';
-import 'package:uuid/uuid.dart';
 
 void main() {
   late Database database;
   late Connection connection;
 
-  setUp(() {
-    database = duckdb.open(":memory:");
-    connection = duckdb.connect(database);
+  setUp(() async {
+    database = await duckdb.open(":memory:");
+    connection = await duckdb.connect(database);
   });
 
-  tearDown(() {
-    connection.dispose();
-    database.dispose();
+  tearDown(() async {
+    await connection.dispose();
+    await database.dispose();
   });
 
-  test('simple uuid', () {
+  test('simple uuid', () async {
     const uuidString = '79700043-11eb-1101-80d6-510900000d10';
-    final results = connection.query("SELECT '$uuidString'::UUID;").fetchAll();
+    final results =
+        (await connection.query("SELECT '$uuidString'::UUID;")).fetchAll();
 
-    final uuid = results[0][0]! as UuidValue;
-    expect(uuid, UuidValue.fromString(uuidString));
+    final uuid = results[0][0]!.toString();
+    expect(uuid, uuidString);
   });
 }

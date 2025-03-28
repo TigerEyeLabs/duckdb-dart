@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:dart_duckdb/src/api/column.dart';
 import 'package:dart_duckdb/src/api/database_type.dart';
 
@@ -10,9 +8,6 @@ import 'package:dart_duckdb/src/api/database_type.dart';
 ///
 /// A result set is organized into vertical table slices called columns.
 abstract class ResultSet {
-  /// The number of chunks in the result set
-  int get chunkCount;
-
   /// The number of columns in the result set
   int get columnCount;
 
@@ -26,7 +21,7 @@ abstract class ResultSet {
   List<int> get columnTypes;
 
   /// The native database result handle from duckdb.
-  Pointer<void> get handle;
+  dynamic get handle;
 
   /// The object at the given [index] in the list.
   ///
@@ -72,5 +67,5 @@ abstract class ResultSet {
   DatabaseType columnDataType(int columnIndex);
 
   /// Closes this result and releases associated resources.
-  void dispose();
+  Future<void> dispose();
 }
