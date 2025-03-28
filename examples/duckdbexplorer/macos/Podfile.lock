@@ -1,6 +1,8 @@
 PODS:
   - dart_duckdb (1.2.0):
     - FlutterMacOS
+  - file_picker (0.0.1):
+    - FlutterMacOS
   - FlutterMacOS (1.0.0)
   - path_provider_foundation (0.0.1):
     - Flutter
@@ -8,19 +10,23 @@ PODS:
 
 DEPENDENCIES:
   - dart_duckdb (from `Flutter/ephemeral/.symlinks/plugins/dart_duckdb/macos`)
+  - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
 
 EXTERNAL SOURCES:
   dart_duckdb:
     :path: Flutter/ephemeral/.symlinks/plugins/dart_duckdb/macos
+  file_picker:
+    :path: Flutter/ephemeral/.symlinks/plugins/file_picker/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
   path_provider_foundation:
     :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
 
 SPEC CHECKSUMS:
-  dart_duckdb: 9989f11d2c2ca31dd414a160416b89b80f1a0afd
+  dart_duckdb: 8003ebd260e7f8a3a0cf55be76c26cf7b998e6e7
+  file_picker: 7584aae6fa07a041af2b36a2655122d42f578c1a
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
 
