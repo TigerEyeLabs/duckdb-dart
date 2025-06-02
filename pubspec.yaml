@@ -12,7 +12,7 @@ dependencies:
   async: ^2.11.0
   collection: ^1.17.0
   ffi: ^2.0.1
-  intl: ^0.19.0
+  intl: any
   js_interop: ^0.0.1
   logging: ^1.0.2
   meta: ^1.8.0
