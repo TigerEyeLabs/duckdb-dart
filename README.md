@@ -1,198 +1,275 @@
-# DuckDB.Dart
+# DuckDB.dart
 
-**DuckDB.Dart** is the native Dart API for [DuckDB](https://duckdb.org/), enabling developers to harness the power of DuckDB in Dart-based applications across Apple, iOS, Android, Linux, and Windows platforms.
+**Welcome to DuckDB.dart, the native Dart interface to [DuckDB](https://duckdb.org), a high-performance analytical database system.** With DuckDB.dart, you can **harness the power of DuckDB in your Dart applications across multiple platforms**, including Apple (macOS, iOS), Android, Linux, and Windows, delivering seamless integration and top-tier performance for your analytical workloads.
 
-## DuckDB Overview
+<img src="duckdb-dart.png" alt="DuckDB.dart" style="display:block; margin-left:auto; margin-right:auto;">
 
-DuckDB is a high-performance analytical database system known for its speed, reliability, and ease of use. It supports a comprehensive SQL dialect, offering features such as:
+---
 
-- Arbitrary and nested correlated subqueries
-- Window functions
-- Collations
-- Complex types (arrays, structs)
+## Table of Contents
 
-For more information on DuckDB's goals and capabilities, visit the [Why DuckDB page](https://duckdb.org/why_duckdb).
-# DuckDB.Dart
+- [Introduction](#introduction)
+- [Why DuckDB.dart?](#why-duckdbdart)
+- [Features](#features)
+- [Installation](#installation)
+- [Getting Started](#getting-started)
+  - [Basic Usage](#basic-usage)
+  - [Querying Data](#querying-data)
+- [Advanced Examples](#advanced-examples)
+  - [Querying a Parquet File](#querying-a-parquet-file)
+  - [Using Window Functions](#using-window-functions)
+  - [Working with CSV Files](#working-with-csv-files)
+- [Platform Support](#platform-support)
+- [API Documentation](#api-documentation)
+- [Contributing](#contributing)
+- [License](#license)
+- [FAQ](#faq)
 
-**DuckDB.Dart** is the native Dart API for [DuckDB](https://duckdb.org/), enabling developers to harness the power of DuckDB in Dart-based applications across Apple, iOS, Android, Linux, and Windows platforms.
+---
 
-## DuckDB Overview
+## Introduction
 
-DuckDB is a high-performance analytical database system known for its speed, reliability, and ease of use. It supports a comprehensive SQL dialect, offering features such as:
+**DuckDB.dart** is the [Dart](https://dart.dev/) interface to [DuckDB](https://duckdb.org/), an in-process SQL OLAP database management system designed for high-performance analytical queries. Whether you're building mobile apps with Flutter, desktop software, or server-side solutions, DuckDB.dart enables fast, efficient, and versatile data analysis without requiring external database servers.
 
-- Arbitrary and nested correlated subqueries
-- Window functions
-- Collations
-- Complex types (arrays, structs)
+For an in-depth introduction, watch the DuckCon #5 talk from Seattle 2024: "[Quack attack: Bringing DuckDB to the Dart side](https://www.youtube.com/watch?v=kWM6ZnTHwYk)."
 
-For more information on DuckDB's goals and capabilities, visit the [Why DuckDB page](https://duckdb.org/why_duckdb).
+---
 
-## Building DuckDB.dart
+## Why DuckDB.dart?
 
-- Setup Dart SDK, [Getting Started](https://dart.dev/get-dart)
-- Install FVM, [Getting Started](https://fvm.app/documentation/getting-started/installation)
-- Run Flutter Doctor to ensure everything is setup correctly. `fvm flutter doctor`
-- `make build`
+**DuckDB.dart** is an excellent choice for Dart developers needing a powerful embedded database. Here's why:
 
-### Android Builds
+- **Performance**: Powered by DuckDB's vectorized query engine for lightning-fast analytical queries.
+- **Portability**: Runs effortlessly across multiple platforms with no additional setup.
+- **Ease of Use**: Provides a simple, Dart-native API that's intuitive for developers.
+- **Self-Contained**: Includes DuckDB binaries, eliminating external dependencies.
+- **Advanced SQL**: Supports a rich SQL dialect, including window functions and complex queries.
 
-- Android Studio is required to build the Android binaries, [Install Studio](https://developer.android.com/studio).
-- JDK 17 is required to build the Android binaries.
+Choose DuckDB.dart for a lightweight, high-performance database solution tailored to Dart.
 
-Here are the step-by-step instructions to install JDK 17 using SDKMAN:
+## Features
 
-1. First, install SDKMAN if you haven't already:
+- **Native Dart API**: Integrates seamlessly with Dart for a natural developer experience.
+- **Cross-Platform Support**: Works on Apple (macOS, iOS), Android, Linux, and Windows.
+- **Batteries Included**: Ships with DuckDB binaries—no external installations needed.
+- **High-Performance Queries**: Leverages DuckDB's vectorized engine for optimal speed.
+- **Nonblocking I/O**: Uses dedicated background isolates per connection for efficient, zero-copy query results.
+- **Direct File Access**: Query CSV, JSON, Parquet, and other formats without importing data.
+- **Comprehensive SQL Dialect**: Supports advanced [SQL](https://duckdb.org/docs/stable/sql/dialect/friendly_sql) features like window functions and collations.
+
+---
+
+## Installation
+
+DuckDB.dart is available on [pub.dev](https://pub.dev/packages/dart_duckdb). Add it to your project as follows:
+
+### For Flutter Projects
+
+Run this command:
+
 ```bash
-curl -s "https://get.sdkman.io" | bash
+$ flutter pub add dart_duckdb
 ```
 
-2. Open a new terminal or source SDKMAN in your current terminal:
+This updates your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  dart_duckdb: ^1.2.0
+```
+
+### For Dart Projects
+
+Run this command:
+
 ```bash
-source "$HOME/.sdkman/bin/sdkman-init.sh"
+$ dart pub add dart_duckdb
 ```
 
-3. Verify SDKMAN is installed:
-```bash
-sdk version
+This updates your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  dart_duckdb: ^1.2.0
 ```
 
-4. List available Java versions:
-```bash
-sdk list java
+Download the latest duckdb release from [duckdb.org](https://github.com/duckdb/duckdb/releases).
+
+In your dart code, tell the framework where the duckdb binary.
+
+```dart
+  open.overrideFor(
+      OperatingSystem.macOS, 'path/to/libduckdb.dylib');
 ```
 
-5. Install JDK 17 (you can choose between different distributions like Oracle, Amazon Corretto, Eclipse Temurin, etc.):
+### Import it
 
-Note: The exact version numbers might change over time. Use `sdk list java` to see the latest available versions.
+Now you can use the package:
 
-For Temurin (OpenJ9):
-```bash
-sdk install java 17.0.12-tem
+```dart
+import 'package:dart_duckdb/dart_duckdb.dart';
 ```
 
-6. Verify the installation:
-```bash
-java -version
-```
+---
 
-7. Set JDK 17 as default (optional):
-```bash
-sdk default java 17.0.12-tem
-```
+## Getting Started
 
-*Note:* If you see
-`"Could not resolve all files for configuration ':dart_duckdb:androidJdkImage'"`
+### Basic Usage
 
-try configuring flutter
-```
-flutter config --jdk-dir=PATH_TO_JDK_17
-```
-
-## Usage Examples
-
-Here are some common use cases for DuckDB.Dart:
-
-### Querying a Database
+Here's a simple example to start using DuckDB.dart:
 
 ```dart
 import 'package:dart_duckdb/dart_duckdb.dart';
 
-void main() async {
-  final db = await duckdb.open(":memory:");
-  final connection = await duckdb.connect(db);
+void main() {
+  final db = duckdb.open(":memory:");
+  final conn = db.connect();
 
-  await connection.execute('''
-    CREATE TABLE users (id INTEGER, name VARCHAR, age INTEGER);
-    INSERT INTO users VALUES (1, 'Alice', 30), (2, 'Bob', 25);
-  ''');
+  conn.execute("CREATE TABLE users (id INTEGER, name VARCHAR)");
+  conn.execute("INSERT INTO users VALUES (1, 'Alice')");
 
-  final result = await connection.query("SELECT * FROM users WHERE age > 28");
-  final rows = result.fetchAll();
-
-  for (final row in rows) {
+  final result = conn.query("SELECT * FROM users");
+  for (final row in result.fetchAll()) {
     print(row);
   }
 
-  connection.dispose();
-  db.dispose();
+  conn.close();
+  db.close();
 }
 ```
 
+This demonstrates opening a database, creating a table, inserting data, querying it, and closing resources.
+
+### Querying Data
+
+Execute SQL queries and process results easily:
+
+```dart
+final result = conn.query("SELECT id, name FROM users WHERE id > 0");
+for (final row in result.fetchAll()) {
+  print('ID: ${row['id']}, Name: ${row['name']}');
+}
+```
+
+--
+
+## Advanced Examples
+
+### Querying a Parquet File
+
+Query Parquet files directly without loading them into the database:
+
+```dart
+final result = conn.query("SELECT * FROM 'data/large_dataset.parquet' LIMIT 10");
+for (final row in result.fetchAll()) {
+    print(row);
+}
+```
+
+### Using Window Functions
+
+Perform advanced analytics with window functions:
+
+```dart
+conn.execute("CREATE TABLE sales (id INTEGER, amount DECIMAL, date DATE)");
+conn.execute("INSERT INTO sales VALUES (1, 100.0, '2023-01-01'), (2, 150.0, '2023-01-02'), (3, 200.0, '2023-01-03')");
+
+final result = conn.query("""
+  SELECT id, amount, date,
+         SUM(amount) OVER (ORDER BY date) AS running_total
+  FROM sales
+""");
+for (final row in result.fetchAll()) {
+  print('ID: ${row['id']}, Amount: ${row['amount']}, Date: ${row['date']}, Running Total: ${row['running_total']}');
+}
+```
+
+### Working with CSV Files
+
+Query CSV files directly:
+
+```dart
+final result = conn.query("SELECT * FROM 'data/sales_data.csv' WHERE quantity > 10");
+for (final row in result.fetchAll()) {
+  print(row);
+}
+```
+
+Explore more examples in the [examples directory](https://github.com/tigereyelabs/duckdb-dart/tree/main/examples).
+
+---
+
+## Platform Support
+
+DuckDB.dart supports the following platforms:
+
+- 🍎 Apple (macOS, iOS)
+- 🤖 Android
+- 🐧 Linux
+- 🪟 Windows
+
+> **Note:** Web support is currently not available but is planned for future releases.
+
+See platform-specific details in the [Building Instructions](BUILDING.md)
+
+---
+
+API Documentation
+
+For detailed API information, visit the [API Documentation](https://pub.dev/documentation/dart_duckdb/latest/).
+
+---
+
+If you have any questions, feedback or ideas, feel free to create an [issue](https://github.com/tigereyelabs/duckdb-dart/issues). If you enjoy this project, I'd appreciate your 🌟 on [GitHub](https://github.com/TigerEyeLabs/duckdb-dart).
+
+---
+
+## FAQ
+
+**Q: Does DuckDB.dart support Flutter web?**<br/>
+A: Not yet, but web support is planned.
+
+**Q: Can it handle large datasets?**<br/>
+A: Yes, DuckDB excels at processing large datasets efficiently, including direct file queries.
+
+**Q: Is it production-ready?**<br/>
+A: Yes, built on the stable DuckDB engine, it's suitable for production use.
+
+**Q: How do I report a bug?**<br/>
+A: Open an issue on the GitHub issue tracker.
+
+
+
+---
+
+## Sponsors
+
+DuckDB.dart is proudly Sponsored by [TigerEye <span style="font-size: 20px;">🐅</span>](https://www.tigereye.com/)
+
+<p align="center">
+<table>
+    <tbody>
+        <tr>
+            <td align="center">
+              <a href="https://www.tigereye.com/">
+                <img src="https://cdn.prod.website-files.com/653addd11146228383e8c898/657238e1116ae296dddecc7b_tigereye-logo.svg" alt="TigerEye Logo" width="200">
+              </a>
+            </td>
+        </tr>
+    </tbody>
+</table>
+</p>
+
+<p align="center">
+
+---
+
 ## Contributing
 
-We welcome contributions to DuckDB.Dart! If you have suggestions for improvements or bug fixes, please follow these steps:
+We'd love your contributions! Here's how to get started:
 
 1. Fork the repository.
 2. Create a new branch for your feature or bug fix.
 3. Make your changes and commit them with descriptive messages.
 4. Push your changes to your fork.
-5. Create a pull request with a detailed description of your changes.
-
-## Support and Contact
-
-If you encounter any issues or have questions, please check our [issue tracker](https://github.com/TigerEyeLabs/duckdb-dart/issues)
-
----
-
-
-## Building DuckDB.Dart from Source
-
-### Install Dependencies
-
-Install fvm, [Getting Started](https://fvm.app/documentation/getting-started/installation)
-
-Install any platform dependencies for DuckDB. Here are the [DuckDB Building Instructions](https://duckdb.org/docs/dev/building/build_instructions.html). Also, the github workflows are the best examples to learn from.
-
-### Build DuckDB
-
-Run make from this project to build/patch duckdb.
-
-#### MacOS Universal
-
-To build for MacOS:
-
-```sh
-make macos
-```
-
-#### iOS (Requires iOS SDK)
-
-To build for an iOS device:
-
-```sh
-make ios_device
-```
-
-To build for an iOS simulator:
-
-```sh
-make ios_simulator
-```
-
-#### Android (Requires Android NDK)
-
-To build for Android:
-
-```sh
-make android
-```
-
-#### Windows (Requires MINGW64)
-
-```sh
-cd windows && ./getduck.ps1
-```
-
-#### Linux
-
-To build for Linux:
-
-```sh
-make linux
-```
-
-### Build DuckDB.Dart
-
-```sh
-make build
-```
+5. Submit a pull request with a detailed description of your changes.
