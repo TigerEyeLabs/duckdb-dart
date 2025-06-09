@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2
+- ✨ Added duckdb 1.2.2
+- 🔧 Readme cleanup 
+
 ## 1.2.0
 - ✨ Moved to async calls, managing isolate communication internally.
 - ✨ Added duckdb 1.2.1
