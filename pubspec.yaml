@@ -1,8 +1,8 @@
 name: dart_duckdb
-description: Provides lightweight yet convenient bindings to DuckDB by using dart:ffi
+description: DuckDB for macOS, iOS, Android, Linux, and Windows
 version: 1.2.0
 homepage: https://github.com/TigerEyeLabs/duckdb-dart
-issue_tracker: https://github.com/duckdb/duckdb/issues
+issue_tracker: https://github.com/TigerEyeLabs/duckdb-dart/issues
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -18,6 +18,7 @@ dependencies:
   meta: ^1.8.0
   path: ^1.8.2
   uuid: ^4.4.0
+  web: ^1.1.0
 
 dev_dependencies:
   ffigen: ^14.0.1
@@ -26,11 +27,12 @@ dev_dependencies:
     sdk: flutter
   test: ^1.22.0
 
+topics:
+  - duckdb
+  - database
+  - sql
+
 flutter:
-  # This section identifies this Flutter project as a plugin project.
-  # The pluginClass identifiers should not ordinarily be modified.
-  # They are used by the tooling to maintain consistency when
-  # adding or updating assets for this project.
   plugin:
     platforms:
       ios:
