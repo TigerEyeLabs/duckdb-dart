@@ -119,22 +119,22 @@ import 'package:dart_duckdb/dart_duckdb.dart';
 Here's a simple example to start using DuckDB.dart:
 
 ```dart
-import 'package:dart_duckdb/dart_duckdb.dart';
+Future<void> main() async {
+  open.overrideFor(OperatingSystem.macOS, 'path/to/libduckdb.dylib');
 
-void main() {
-  final db = duckdb.open(":memory:");
-  final conn = db.connect();
+  final db = await duckdb.open(":memory:");
+  final conn = await duckdb.connect(db);
 
-  conn.execute("CREATE TABLE users (id INTEGER, name VARCHAR)");
-  conn.execute("INSERT INTO users VALUES (1, 'Alice')");
+  await conn.execute("CREATE TABLE users (id INTEGER, name VARCHAR)");
+  await conn.execute("INSERT INTO users VALUES (1, 'Alice')");
 
-  final result = conn.query("SELECT * FROM users");
+  final result = await conn.query("SELECT * FROM users");
   for (final row in result.fetchAll()) {
     print(row);
   }
 
-  conn.close();
-  db.close();
+  await conn.dispose();
+  await db.dispose();
 }
 ```
 
@@ -145,10 +145,11 @@ This demonstrates opening a database, creating a table, inserting data, querying
 Execute SQL queries and process results easily:
 
 ```dart
-final result = conn.query("SELECT id, name FROM users WHERE id > 0");
-for (final row in result.fetchAll()) {
-  print('ID: ${row['id']}, Name: ${row['name']}');
-}
+  // ...
+  final result = await conn.query("SELECT id, name FROM users WHERE id > 0");
+  for (final row in result.fetchAll()) {
+    print('ID: ${row[0]}, Name: ${row[1]}');
+  }
 ```
 
 --
@@ -160,10 +161,12 @@ for (final row in result.fetchAll()) {
 Query Parquet files directly without loading them into the database:
 
 ```dart
-final result = conn.query("SELECT * FROM 'data/large_dataset.parquet' LIMIT 10");
-for (final row in result.fetchAll()) {
+  final result = await conn.query(
+    "SELECT * FROM 'data/large_dataset.parquet' LIMIT 10",
+  );
+  for (final row in result.fetchAll()) {
     print(row);
-}
+  }
 ```
 
 ### Using Window Functions
@@ -171,17 +174,23 @@ for (final row in result.fetchAll()) {
 Perform advanced analytics with window functions:
 
 ```dart
-conn.execute("CREATE TABLE sales (id INTEGER, amount DECIMAL, date DATE)");
-conn.execute("INSERT INTO sales VALUES (1, 100.0, '2023-01-01'), (2, 150.0, '2023-01-02'), (3, 200.0, '2023-01-03')");
+  await conn.execute(
+    "CREATE TABLE sales (id INTEGER, amount DECIMAL, date DATE)",
+  );
+  await conn.execute(
+    "INSERT INTO sales VALUES (1, 100.0, '2023-01-01'), (2, 150.0, '2023-01-02'), (3, 200.0, '2023-01-03')",
+  );
 
-final result = conn.query("""
+  final result = await conn.query("""
   SELECT id, amount, date,
          SUM(amount) OVER (ORDER BY date) AS running_total
   FROM sales
 """);
-for (final row in result.fetchAll()) {
-  print('ID: ${row['id']}, Amount: ${row['amount']}, Date: ${row['date']}, Running Total: ${row['running_total']}');
-}
+  for (final row in result.fetchAll()) {
+    print(
+      'ID: ${row[0]}, Amount: ${row[1]}, Date: ${row[2]}, Running Total: ${row[3]}',
+    );
+  }
 ```
 
 ### Working with CSV Files
@@ -189,10 +198,12 @@ for (final row in result.fetchAll()) {
 Query CSV files directly:
 
 ```dart
-final result = conn.query("SELECT * FROM 'data/sales_data.csv' WHERE quantity > 10");
-for (final row in result.fetchAll()) {
-  print(row);
-}
+  final result = await conn.query(
+    "SELECT * FROM 'data/sales_data.csv' WHERE quantity > 10",
+  );
+  for (final row in result.fetchAll()) {
+    print(row);
+  }
 ```
 
 Explore more examples in the [examples directory](https://github.com/tigereyelabs/duckdb-dart/tree/main/examples).
