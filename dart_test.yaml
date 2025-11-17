@@ -1,0 +1,43 @@
+custom_html_template_path: assets/web_test.html.tp1
+
+tags:
+  web:
+  native:
+  shared:
+
+timeout: 4x
+
+on_platform:
+  chrome:
+    timeout: 5x
+    retry: 3
+    settings:
+      headless: true
+      arguments: >-
+        --no-sandbox
+        --disable-gpu
+        --headless
+        --disable-dev-shm-usage
+        --disable-software-rasterizer
+        --no-first-run
+        --mute-audio
+        --disable-extensions
+        --disable-web-security
+        --disable-background-timer-throttling
+        --disable-backgrounding-occluded-windows
+        --disable-popup-blocking
+        --disable-notifications
+        --disable-translate
+  browser:
+    timeout: 4x
+    retry: 2
+
+presets:
+  browsers-dart2js:
+    platforms: [chrome]
+    compiler: dart2js
+    timeout: 5m
+  browsers-dart2wasm:
+    platforms: [chrome]
+    compiler: dart2wasm
+    timeout: 5m

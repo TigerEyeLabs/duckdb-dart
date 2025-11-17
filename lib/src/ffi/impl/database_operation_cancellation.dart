@@ -18,18 +18,38 @@ mixin DatabaseOperationCancellation {
     required String operationDescription,
     DuckDBCancellationToken? token,
   }) async {
-    final (operationId, operationFuture) = isolate.executeWithId(operation);
+    if (token != null && token.isCancelled) {
+      throw DuckDBCancelledException('Operation cancelled');
+    }
+
+    final (operationId, operationFuture) = isolate.execute(operation);
+
+    Future<T> cancellationHandler() async {
+      await token!.cancelled;
+
+      // Mark that we're cancelling before interrupting
+      final wasActive = isolate.currentOperationId == operationId;
+
+      if (wasActive) {
+        // Operation is currently active in the isolate
+        bindings.duckdb_interrupt(handle.value);
+      } else {
+        // Cancel the operation - the isolate will handle it if it hasn't started yet
+        await isolate.cancelOperation(operationId);
+      }
+
+      // Let operationFuture's result/exception propagate
+      await operationFuture;
+
+      // If we get here, the operation completed normally but was cancelled
+      throw DuckDBCancelledException('Operation cancelled');
+    }
 
     final result = await Future.any<T>([
       processResult(operationFuture),
-      if (token != null)
-        token.cancelled.then((_) {
-          if (isolate.currentOperationId == operationId) {
-            bindings.duckdb_interrupt(handle.value);
-          }
-          throw DuckDBCancelledException(operationDescription);
-        }).then((value) => value as T),
+      if (token != null) cancellationHandler(),
     ]);
+
     return result;
   }
 }

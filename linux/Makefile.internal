@@ -1,17 +1,23 @@
-VERSION = v1.2.1
+VERSION = v1.4.1
 DUCKDB_REPO = https://github.com/duckdb/duckdb
 DUCKDB_DIR = ./duckdb
+EXTENSION_DIR = $(DUCKDB_DIR)/extension
+BUILD_EXTENSIONS = 'icu;parquet;json'
+CORE_EXTENSIONS = 'httpfs'
 
 # common environment variables
 export BUILD_SHELL=0
 
-.PHONY: all reset clean release help
+BUILD_DIR = $(DUCKDB_DIR)/build
+LIB_DIR = ./Libraries/release
+
+.PHONY: all reset clean release docker-build help
 
 all: reset release ## Full Build
 
 reset: ## Reset build environment
 	rm -rf ./Libraries/*
-	mkdir -p ./Libraries/release
+	mkdir -p $(LIB_DIR)
 	rm -rf $(DUCKDB_DIR)
 
 ## Clean duckdb build
@@ -20,12 +26,32 @@ clean:
 
 duckdb: ## Clone DuckDb repo and apply patch
 	git clone --depth 1 --branch "$(VERSION)" $(DUCKDB_REPO) $(DUCKDB_DIR)
+	cp extension_config_local.cmake $(EXTENSION_DIR)
 
 release: duckdb ## x64 linux build
-	@export DUCKDB_PLATFORM=linux_amd64; \
-	export DUCKDB_EXTENSIONS='icu;parquet;json'; \
-	make -C $(DUCKDB_DIR) GEN=ninja release; \
-	mv $(DUCKDB_DIR)/build/release/src/libduckdb.so ./Libraries/release/libduckdb.so;
+ifndef VCPKG_TOOLCHAIN_PATH
+	$(error VCPKG_TOOLCHAIN_PATH is not set. See https://github.com/microsoft/vcpkg)
+endif
+	@mkdir -p $(BUILD_DIR)/extension_configuration
+	@cd $(BUILD_DIR)/extension_configuration && cmake -DEXTENSION_CONFIG_BUILD=TRUE \
+	-DCMAKE_BUILD_TYPE=Release ../.. && cmake --build . --config Release
+	@cd $(BUILD_DIR) && cmake -G "Ninja" -DVCPKG_MANIFEST_DIR='extension_configuration' \
+	-DCMAKE_TOOLCHAIN_FILE='${VCPKG_TOOLCHAIN_PATH}' -DVCPKG_TARGET_TRIPLET='x64-linux' \
+	-DDUCKDB_EXPLICIT_PLATFORM='linux_amd64' \
+	-DCMAKE_BUILD_TYPE=Release -DBUILD_EXTENSIONS=$(BUILD_EXTENSIONS) -DCORE_EXTENSIONS=$(CORE_EXTENSIONS) \
+	-DBUILD_SHELL=0 ../
+	@cd $(BUILD_DIR) && cmake --build . --config Release --parallel
+	@mkdir -p $(LIB_DIR)
+	@cp $(BUILD_DIR)/src/libduckdb.so $(LIB_DIR)/libduckdb.so
+	echo "Linux Release Build Complete"
+
+docker-build: reset ## Build using Docker container
+	docker build -t duckdb-build:latest -f Dockerfile .
+	docker run --rm \
+		-v $(PWD):/workspace \
+		-e BUILD_SHELL=0 \
+		duckdb-build:latest \
+		make -f Makefile.internal release
 
 help: ## Display this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

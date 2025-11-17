@@ -1,5 +1,5 @@
 ## Variables
-VERSION = v1.2.1
+VERSION = v1.4.1
 DUCKDB_REPO = https://github.com/duckdb/duckdb
 DUCKDB_DIR = duckdb
 BUILD_DIR = $(DUCKDB_DIR)/build
@@ -30,7 +30,7 @@ EXTENSION_STATIC_BUILD = 1
 CMAKE_VARS_BUILD = -DBUILD_UNITTESTS=0 \
     -DBUILD_SHELL=0 \
     -DCMAKE_TOOLCHAIN_FILE='$(PWD)/android.toolchain.cmake' \
-    -DANDROID_PLATFORM=android-21 \
+    -DANDROID_PLATFORM=23 \
     -DANDROID_STL=c++_static \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DBUILD_SHARED_LIBS=OFF
@@ -64,7 +64,7 @@ build_%: duckdb
 		$(CMAKE_VARS_BUILD) \
 		../ && \
 		cmake --build . --config Release --parallel
-	@${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/$(HOST_PLATFORM)/bin/llvm-strip --strip-debug $(BUILD_DIR)/src/libduckdb.so
+	@${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/$(HOST_PLATFORM)/bin/llvm-strip --strip-unneeded $(BUILD_DIR)/src/libduckdb.so
 	@mkdir -p $(LIB_DIR)/$*
 	@cp $(BUILD_DIR)/src/libduckdb.so $(LIB_DIR)/$*/libduckdb.so;
 

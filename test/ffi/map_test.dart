@@ -58,11 +58,19 @@ void main() {
     );
   });
 
-  test('query should return list when retrieving from map', () async {
+  test('query should return single value when retrieving from map',
+      testOn: 'vm', () async {
     final result =
         (await connection.query("SELECT MAP {'key1': 5, 'key2': 43}['key1'];"))
             .fetchAll();
     expect(result[0][0], 5);
+  });
+
+  test('query should return null for non-existent key', () async {
+    final result =
+        (await connection.query("SELECT MAP {'key1': 5, 'key2': 43}['key3'];"))
+            .fetchAll();
+    expect(result[0][0], null);
   });
 
   test('query should return null for non-existent key', () async {

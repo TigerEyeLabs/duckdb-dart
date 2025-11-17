@@ -1,5 +1,5 @@
 ## Variables
-VERSION = v1.2.1
+VERSION = v1.4.1
 DUCKDB_REPO = https://github.com/duckdb/duckdb
 DUCKDB_DIR = ./duckdb
 BUILD_DIR = $(DUCKDB_DIR)/build
@@ -12,7 +12,7 @@ export BUILD_SHELL=0
 
 .PHONY: all reset clean duckdb simulator device release help
 
-all: reset release ## Full Build
+all: both ## Build both Device and Simulator
 
 reset: ## Reset build environment
 	rm -rf $(LIB_DIR) $(DUCKDB_DIR)
@@ -35,16 +35,55 @@ build_%: duckdb ## Build for specific architecture
 	mv $(DUCKDB_DIR)/build/release/src/duckdb.framework $(LIB_DIR)/duckdb_$*.framework
 
 simulator: build_x86_64_simulator clean build_arm64_simulator ## Universal iOS Simulator Build
+	@mkdir -p $(LIB_DIR)/tmp
+	mv $(LIB_DIR)/duckdb_x86_64_simulator.framework $(LIB_DIR)/tmp/x64.framework
 	mv $(LIB_DIR)/duckdb_arm64_simulator.framework $(LIB_DIR)/duckdb.framework.sim
-	lipo -create $(LIB_DIR)/duckdb.framework.sim/duckdb $(LIB_DIR)/duckdb_x86_64_simulator.framework/duckdb -output $(LIB_DIR)/duckdb.framework.sim/duckdb
-	rm -rf $(LIB_DIR)/duckdb_x86_64_simulator.framework
+	lipo -create $(LIB_DIR)/duckdb.framework.sim/duckdb $(LIB_DIR)/tmp/x64.framework/duckdb -output $(LIB_DIR)/duckdb.framework.sim/duckdb
+	rm -rf $(LIB_DIR)/tmp
 	@echo "Universal Simulator Build Complete"
 
-device: build_arm64_device ## iOS Hardware Build
-	mv $(LIB_DIR)/duckdb_arm64_device.framework $(LIB_DIR)/duckdb.framework
+device: duckdb ## iOS Hardware Build
+	@mkdir -p $(LIB_DIR)
+	@mkdir -p $(DUCKDB_DIR)/build/release && cd $(DUCKDB_DIR)/build/release && \
+	OSX_BUILD_ARCH=arm64 IOS_PLATFORM=iPhoneOS DUCKDB_PLATFORM=osx_arm64 BUILD_SHELL=0 \
+	cmake -G Ninja -DFORCE_COLORED_OUTPUT=1 -DBUILD_EXTENSIONS=$(EXTENSIONS) -DLOCAL_EXTENSION_REPO="" \
+	-DOSX_BUILD_ARCH=arm64 -DIOS_PLATFORM=iPhoneOS -DBUILD_SHELL=0 \
+	-DDUCKDB_EXPLICIT_PLATFORM=osx_arm64 -DCMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_FILE) \
+	-DCMAKE_BUILD_TYPE=Release ../.. && \
+	cmake --build . --target duckdb_framework
+	@cp $(DUCKDB_DIR)/src/include/duckdb.h $(DUCKDB_DIR)/build/release/src/duckdb.framework/Headers
+	@mv $(DUCKDB_DIR)/build/release/src/duckdb.framework $(LIB_DIR)/duckdb.framework
 	@echo "iOS Device Build Complete"
 
-release: device ## Build for device
+simulator_no_clone: ## Universal iOS Simulator Build (no clone)
+	@mkdir -p $(LIB_DIR)/tmp
+	@mkdir -p $(DUCKDB_DIR)/build/release && cd $(DUCKDB_DIR)/build/release && \
+	OSX_BUILD_ARCH=x86_64 IOS_PLATFORM=iPhoneSimulator DUCKDB_PLATFORM=osx_amd64 BUILD_SHELL=0 \
+	cmake -G Ninja -DFORCE_COLORED_OUTPUT=1 -DBUILD_EXTENSIONS=$(EXTENSIONS) -DLOCAL_EXTENSION_REPO="" \
+	-DOSX_BUILD_ARCH=x86_64 -DIOS_PLATFORM=iPhoneSimulator -DBUILD_SHELL=0 \
+	-DDUCKDB_EXPLICIT_PLATFORM=osx_amd64 -DCMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_FILE) \
+	-DCMAKE_BUILD_TYPE=Release ../.. && \
+	cmake --build . --target duckdb_framework
+	@cp $(DUCKDB_DIR)/src/include/duckdb.h $(DUCKDB_DIR)/build/release/src/duckdb.framework/Headers
+	@mv $(DUCKDB_DIR)/build/release/src/duckdb.framework $(LIB_DIR)/tmp/x64.framework
+	@make -C $(DUCKDB_DIR) clean
+	@mkdir -p $(DUCKDB_DIR)/build/release && cd $(DUCKDB_DIR)/build/release && \
+	OSX_BUILD_ARCH=arm64 IOS_PLATFORM=iPhoneSimulator DUCKDB_PLATFORM=osx_arm64 BUILD_SHELL=0 \
+	cmake -G Ninja -DFORCE_COLORED_OUTPUT=1 -DBUILD_EXTENSIONS=$(EXTENSIONS) -DLOCAL_EXTENSION_REPO="" \
+	-DOSX_BUILD_ARCH=arm64 -DIOS_PLATFORM=iPhoneSimulator -DBUILD_SHELL=0 \
+	-DDUCKDB_EXPLICIT_PLATFORM=osx_arm64 -DCMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_FILE) \
+	-DCMAKE_BUILD_TYPE=Release ../.. && \
+	cmake --build . --target duckdb_framework
+	@cp $(DUCKDB_DIR)/src/include/duckdb.h $(DUCKDB_DIR)/build/release/src/duckdb.framework/Headers
+	@mv $(DUCKDB_DIR)/build/release/src/duckdb.framework $(LIB_DIR)/duckdb.framework.sim
+	@lipo -create $(LIB_DIR)/duckdb.framework.sim/duckdb $(LIB_DIR)/tmp/x64.framework/duckdb -output $(LIB_DIR)/duckdb.framework.sim/duckdb
+	@rm -rf $(LIB_DIR)/tmp
+	@echo "Universal Simulator Build Complete"
+
+both: reset device simulator_no_clone ## Build both Device and Simulator
+	@echo "Both Device and Simulator builds complete"
+
+release: both ## Build both device and simulator
 	@echo "Release build complete"
 
 help: ## Display this help message

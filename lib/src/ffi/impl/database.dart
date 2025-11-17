@@ -103,6 +103,31 @@ class DatabaseImpl extends Database {
   @override
   TransferableDatabase get transferable =>
       TransferableDatabaseImpl(_handle.address);
+
+  @override
+  Future<void> registerFileBuffer(String name, Uint8List buffer) async {
+    // No-op for native DuckDB - file registration is only needed for DuckDB-WASM
+  }
+
+  @override
+  Future<void> registerFileURL(
+    String name,
+    String url,
+    DuckDBDataProtocol protocol,
+    bool directIO,
+  ) async {
+    // No-op for native DuckDB - file registration is only needed for DuckDB-WASM
+  }
+
+  @override
+  Future<void> registerFileHandle(
+    String name,
+    dynamic handle,
+    DuckDBDataProtocol protocol,
+    bool directIO,
+  ) async {
+    // No-op for native DuckDB - file registration is only needed for DuckDB-WASM
+  }
 }
 
 /// A simple wrapper on the integer address of the [duckdb_database].

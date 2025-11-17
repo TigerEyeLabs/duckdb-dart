@@ -188,109 +188,6 @@ WHERE current_mood = 'sad';""")).fetchAll();
     );
   });
 
-  test('query should fail since enum mood already exists', () async {
-    await connection
-        .execute("CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy');");
-    expect(
-      () => connection.execute(
-        "CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy', 'anxious');",
-      ),
-      throwsA(isA<DuckDBException>()),
-    );
-  });
-
-  test('query should fail since enum values must be unique', () async {
-    expect(
-      () => connection
-          .execute("CREATE TYPE breed AS ENUM ('maltese', 'maltese');"),
-      throwsA(isA<DuckDBException>()),
-    );
-  });
-
-  test('query should fail since enum values must not be null', () async {
-    expect(
-      () => connection.execute("CREATE TYPE breed AS ENUM ('maltese', NULL);"),
-      throwsA(isA<DuckDBException>()),
-    );
-  });
-
-  test('query should return enum', () async {
-    await connection.execute("""
-CREATE TABLE my_inputs AS
-    SELECT 'duck'  AS my_varchar UNION ALL
-    SELECT 'duck'  AS my_varchar UNION ALL
-    SELECT 'goose' AS my_varchar;
-CREATE TYPE birds AS ENUM (SELECT my_varchar FROM my_inputs);
-""");
-
-    final result = (await connection
-            .query("SELECT enum_range(NULL::birds) AS my_enum_range;"))
-        .fetchAll();
-    expect(
-      result[0][0],
-      ["duck", "goose"],
-    );
-  });
-
-  test('query should return column reference to enum', () async {
-    await connection.execute("""
-CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy', 'anxious');
-CREATE TABLE person (
-    name TEXT,
-    current_mood mood
-);
-INSERT INTO person
-VALUES ('Pedro', 'happy'), ('Mark', NULL), ('Pagliacci', 'sad'), ('Mr. Mackey', 'ok');
-""");
-
-    final result = (await connection.query("""
-SELECT *
-FROM person
-WHERE current_mood = 'sad';""")).fetchAll();
-    expect(
-      result[0],
-      [
-        "Pagliacci",
-        "sad",
-      ],
-    );
-  });
-
-  test('query should return an array', () async {
-    const query = "SELECT array_value(1, 2, 3);";
-    final result = (await connection.query(query)).fetchAll();
-    expect(
-      result[0][0],
-      [1, 2, 3],
-    );
-  });
-
-  test('query should return nested arrays', () async {
-    const query =
-        "SELECT array_value(array_value(1, 2), array_value(3, 4), array_value(5, 6));";
-    final result = (await connection.query(query)).fetchAll();
-    expect(
-      result[0][0],
-      [
-        [1, 2],
-        [3, 4],
-        [5, 6],
-      ],
-    );
-  });
-
-  test('query should return array of structs', () async {
-    const query = "SELECT array_value({'a': 1, 'b': 2}, {'a': 3, 'b': 4});";
-    final result = (await connection.query(query)).fetchAll();
-    expect(
-      result[0][0],
-      [
-        {'a': 1, 'b': 2},
-        {'a': 3, 'b': 4},
-      ],
-    );
-  });
-
   test('query should fail', () async {
     const query = "SELECT 1 as x;";
     final result = await connection.query(query);
@@ -319,19 +216,19 @@ WHERE current_mood = 'sad';""")).fetchAll();
     // Second query with cancellation
     final token = DuckDBCancellationToken();
 
-    // Store the Future but don't await it yet
+    // Start the query but don't await it yet
     final cancelledQuery = connection.query(
       'SELECT COUNT(*) FROM (SELECT * FROM range(1000000)) t3;',
       token: token,
     );
 
-    // Now cancel after the query call
+    // Cancel the query immediately
     token.cancel();
 
     // Now expect the exception
     await expectLater(
       cancelledQuery,
-      throwsA(isA<DuckDBCancelledException>()),
+      throwsA(isA<DuckDBException>()),
     );
 
     // Third query should still work
@@ -340,6 +237,36 @@ WHERE current_mood = 'sad';""")).fetchAll();
 
     // First query should complete normally
     expect(await results[0], isA<ResultSet>());
+  });
+
+  test('should handle cancellation of running query', testOn: 'vm', () async {
+    final token = DuckDBCancellationToken();
+
+    // Start a long-running query with cancellation token
+    final cancelledQuery = connection.query(
+      '''
+      SELECT COUNT(*)
+      FROM (SELECT generate_series FROM generate_series(1, 100000000)) t1
+      WHERE generate_series % 2 = 0;
+      ''',
+      token: token,
+    );
+
+    // Give query time to start
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    // Cancel the running query
+    token.cancel();
+
+    // Expect the query to be cancelled
+    await expectLater(
+      cancelledQuery,
+      throwsA(isA<DuckDBException>()),
+    );
+
+    // Verify connection is still usable after cancellation
+    final result = await connection.query('SELECT 42');
+    expect(result[0][0], 42);
   });
 
   test('interrupt should affect results after gathering', testOn: 'vm',
@@ -387,7 +314,10 @@ WHERE current_mood = 'sad';""")).fetchAll();
     await connection.interrupt();
 
     // Verify interrupted query fails
-    await expectLater(interruptedQuery, throwsA(isA<DuckDBException>()));
+    await expectLater(
+      interruptedQuery,
+      throwsA(isA<DuckDBException>()),
+    );
 
     // Verify subsequent queries succeed
     final result1 = await followUpQuery1;

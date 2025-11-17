@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:isolate';
 
 import 'package:dart_duckdb/dart_duckdb.dart';
 import 'package:file_picker/file_picker.dart';
@@ -70,19 +69,34 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
   }
 
   Future<void> _openDatabase() async {
-    String? filePath = await FilePicker.platform
-        .pickFiles(
-          type: FileType.any,
-        )
-        .then((result) => result?.files.single.path);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+    );
 
-    if (filePath != null) {
+    if (result != null) {
+      final file = result.files.first;
+
       // Close the existing database and connection
       _connection?.dispose();
       _database?.dispose();
 
-      _database = await duckdb.open(filePath);
+      if (kIsWeb) {
+        _database = await duckdb.open('opfs://db.db', settings: {
+          'access_mode': 'READ_WRITE',
+        });
+        await _database!.registerFileBuffer(file.name!, file.bytes!);
+      } else {
+        _database = await duckdb.open(file.path!);
+      }
+
       _connection = await duckdb.connect(_database!);
+
+      if (kIsWeb) {
+        await _connection!.execute(
+          "ATTACH '${file.name}' AS remote (READ_ONLY);",
+        );
+      }
+
       setState(() {});
     }
   }
@@ -105,110 +119,41 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
           query += ' LIMIT $_limit OFFSET $_offset';
         }
 
-        // Create the task parameters
-        final taskParams = _QueryTaskParams(
-          transferableDb: _database!.transferable,
-          query: query,
-          countQuery: countQuery,
-          sendPort: null,
-        );
+        // Execute the main query
+        final results = await _connection?.query(query);
+        final columns = results?.columnNames;
+        final rows = results?.fetchAll();
 
-        // We’ll reuse the Completer to track when we’ve updated UI
-        final completer = Completer<void>();
-
-        // ----------------------------------------------------------
-        // NATIVE path: spawn an isolate
-        // ----------------------------------------------------------
-        final receivePort = ReceivePort();
-        // Pass the real SendPort so isolate can communicate back
-        final isolateParams = taskParams.copyWith(
-          sendPort: receivePort.sendPort,
-        );
-
-        await Isolate.spawn<_QueryTaskParams>(
-            _backgroundQueryTask, isolateParams);
-
-        // Listen for isolate results
-        receivePort.listen((dynamic message) {
-          if (message is QueryResponse) {
-            setState(() {
-              _columnNames = message.columns ?? [];
-              _rows = message.rows ?? [[]];
-              _totalRows = message.totalRows;
-              stopwatch.stop();
-              _executionTimeController.text =
-                  '${stopwatch.elapsedMilliseconds} ms';
-              _totalRowCountController.text = 'Total: $_totalRows';
-              _currentPageController.text =
-                  'Page: ${(_offset / _limit).ceil() + 1}';
-            });
-            completer.complete();
-          } else if (message is String) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error: $message')),
-            );
-            completer.completeError(message);
+        // Execute count query if needed
+        int totalRows = 0;
+        if (countQuery.isNotEmpty) {
+          final countResults = await _connection?.query(countQuery);
+          final count = countResults?.fetchAll();
+          if (count?.first.first != null) {
+            var countValue = count!.first.first;
+            if (countValue is int) {
+              totalRows = countValue;
+            } else if (countValue is BigInt) {
+              totalRows = countValue.toInt();
+            }
           }
-        });
+        }
 
-        await completer.future;
+        setState(() {
+          _columnNames = columns ?? [];
+          _rows = rows ?? [[]];
+          _totalRows = totalRows;
+          stopwatch.stop();
+          _executionTimeController.text = '${stopwatch.elapsedMilliseconds} ms';
+          _totalRowCountController.text = 'Total: $_totalRows';
+          _currentPageController.text =
+              'Page: ${(_offset / _limit).ceil() + 1}';
+        });
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
       }
-    }
-  }
-
-  Future<QueryResponse> _backgroundQueryTaskDirect(
-      _QueryTaskParams params) async {
-    final results = await _connection?.query(params.query);
-    final columns = results?.columnNames;
-    final rows = results?.fetchAll();
-
-    int totalRows = 0;
-
-    if (params.countQuery.isNotEmpty) {
-      final countResults = await _connection?.query(params.countQuery);
-      final count = countResults?.fetchAll();
-      if (count?.first.first != null) {
-        var countValue = count!.first.first;
-        if (countValue is int) {
-          totalRows = countValue;
-        } else if (countValue is BigInt) {
-          totalRows = countValue.toInt();
-        }
-      }
-    }
-
-    return ((
-      columns: columns,
-      rows: rows,
-      totalRows: totalRows,
-    ));
-  }
-
-  static void _backgroundQueryTask(_QueryTaskParams params) async {
-    try {
-      final connection =
-          await duckdb.connectWithTransferred(params.transferableDb);
-      final results = await connection.query(params.query);
-      final columns = results.columnNames;
-      final rows = results.fetchAll();
-
-      int totalRows = 0;
-      if (params.countQuery.isNotEmpty) {
-        final countResults = await connection.query(params.countQuery);
-        totalRows = countResults.fetchAll().first.first as int;
-      }
-
-      params.sendPort!.send((
-        columns: columns,
-        rows: rows,
-        totalRows: totalRows,
-      ));
-    } catch (e) {
-      params.sendPort!.send(e.toString());
     }
   }
 
@@ -349,29 +294,6 @@ class _SqlExecutorPageState extends State<SqlExecutorPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _QueryTaskParams {
-  final TransferableDatabase transferableDb;
-  final String query;
-  final String countQuery;
-  final SendPort? sendPort;
-
-  _QueryTaskParams({
-    required this.transferableDb,
-    required this.query,
-    required this.countQuery,
-    this.sendPort,
-  });
-
-  _QueryTaskParams copyWith({SendPort? sendPort}) {
-    return _QueryTaskParams(
-      transferableDb: this.transferableDb,
-      query: this.query,
-      countQuery: this.countQuery,
-      sendPort: sendPort ?? this.sendPort,
     );
   }
 }

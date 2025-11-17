@@ -1,9 +1,9 @@
 diff --git a/Makefile b/Makefile
-index 227d582e0e..2bcb434f19 100644
+index f0bd8b793c..ebfaf59f3b 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -278,9 +278,19 @@ ifneq (${BLOCK_ALLOC_SIZE}, )
- 	CMAKE_VARS:=${CMAKE_VARS} -DBLOCK_ALLOC_SIZE=${BLOCK_ALLOC_SIZE}
+@@ -297,9 +297,19 @@ ifneq (${STANDARD_VECTOR_SIZE}, )
+ 	CMAKE_VARS:=${CMAKE_VARS} -DSTANDARD_VECTOR_SIZE=${STANDARD_VECTOR_SIZE}
  endif
  
 +ifneq ("${IOS_PLATFORM}", "")
@@ -24,7 +24,7 @@ index 227d582e0e..2bcb434f19 100644
  ifneq ("${VCPKG_TARGET_TRIPLET}", "")
  	CMAKE_VARS_BUILD:=${CMAKE_VARS_BUILD} -DVCPKG_TARGET_TRIPLET='${VCPKG_TARGET_TRIPLET}'
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 58adef3fc0..d8d2b9b929 100644
+index d7593a23db..e3478a9806 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -57,6 +57,45 @@ function(ensure_variable_is_number INPUT_VERSION OUT_RESULT)
@@ -73,21 +73,21 @@ index 58adef3fc0..d8d2b9b929 100644
  if(AMALGAMATION_BUILD)
  
    add_library(duckdb SHARED "${PROJECT_SOURCE_DIR}/src/amalgamation/duckdb.cpp")
-@@ -140,6 +179,13 @@ else()
-   link_threads(duckdb_static)
-   link_extension_libraries(duckdb_static)
+@@ -146,6 +185,13 @@ else()
+   link_threads(duckdb_static PUBLIC)
+   link_extension_libraries(duckdb_static PUBLIC)
  
 +  add_library(duckdb_framework SHARED
 +    ${ALL_OBJECT_FILES}
 +    "${PROJECT_SOURCE_DIR}/src/include/duckdb.h")
-+  target_link_libraries(duckdb_framework ${DUCKDB_LINK_LIBS})
-+  link_threads(duckdb_framework)
-+  link_extension_libraries(duckdb_framework)
++  target_link_libraries(duckdb_framework PUBLIC ${DUCKDB_LINK_LIBS})
++  link_threads(duckdb_framework PUBLIC)
++  link_extension_libraries(duckdb_framework PUBLIC)
 +
    target_include_directories(
      duckdb PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-@@ -148,6 +194,21 @@ else()
+@@ -154,6 +200,21 @@ else()
      duckdb_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
  
@@ -109,7 +109,7 @@ index 58adef3fc0..d8d2b9b929 100644
    install(
      DIRECTORY "${PROJECT_SOURCE_DIR}/src/include/duckdb"
      DESTINATION "${INSTALL_INCLUDE_DIR}"
-@@ -161,8 +222,10 @@ else()
+@@ -167,8 +228,10 @@ else()
  endif()
  
  install(

@@ -129,16 +129,16 @@ class ConnectionImpl extends Connection with DatabaseOperationCancellation {
       );
       _bindings.duckdb_interrupt(_handle.value);
 
+      // Dispose the database isolate first to prevent new operations from being queued
+      _log.fine(
+        'Disposing connection isolate... [Connection:${_isolate._debugId}]',
+      );
+      await _isolate.dispose();
+
       // Finally detach the finalizer and dispose the connection
       _log.fine('Closing connection... [Connection:${_isolate._debugId}]');
       _finalizer.detach(this);
       _finalizable.dispose();
-
-      // Dispose the database isolate first to prevent new operations from being queued
-      _log.fine(
-        'Disposing database isolate... [Connection:${_isolate._debugId}]',
-      );
-      await _isolate.dispose();
     } catch (e, st) {
       _log.severe(
         'Error during dispose [Connection:${_isolate._debugId}]',
@@ -169,9 +169,18 @@ class ConnectionImpl extends Connection with DatabaseOperationCancellation {
       ),
       processResult: (future) async {
         final resultPointer = await future;
-        return ResultSetImpl.withResult(
-          Pointer<duckdb_result>.fromAddress(resultPointer),
-        );
+        final result = Pointer<duckdb_result>.fromAddress(resultPointer);
+
+        final error = _bindings.duckdb_result_error(result);
+        if (!error.isNullPointer) {
+          try {
+            final errorString = error.readString();
+            throw DuckDBException(errorString);
+          } finally {
+            _bindings.duckdb_destroy_result(result);
+          }
+        }
+        return ResultSetImpl.withResult(result);
       },
       operationDescription: query,
       token: token,
@@ -195,9 +204,10 @@ class ConnectionImpl extends Connection with DatabaseOperationCancellation {
         final result = Pointer<duckdb_result>.fromAddress(resultPointer);
         try {
           // Check for errors but discard the result
-          if (_bindings.duckdb_result_error(result).address != 0) {
-            final error = _bindings.duckdb_result_error(result).readString();
-            throw DuckDBException(error);
+          final error = _bindings.duckdb_result_error(result);
+          if (!error.isNullPointer) {
+            final errorString = error.readString();
+            throw DuckDBException(errorString);
           }
         } finally {
           _bindings.duckdb_destroy_result(result);
@@ -214,7 +224,7 @@ class ConnectionImpl extends Connection with DatabaseOperationCancellation {
     DuckDBCancellationToken? token,
   }) async {
     _ensureOpen();
-    return PreparedStatementImpl.prepare(this, query);
+    return PreparedStatementImpl.prepare(this, query, token: token);
   }
 
   @override
@@ -269,8 +279,13 @@ class QueryOperation extends DatabaseOperation {
     try {
       if (bindings.duckdb_query(connection.value, queryPtr, result) ==
           duckdb_state.DuckDBError) {
-        final error = bindings.duckdb_result_error(result).readString();
-        throw DuckDBException(error);
+        try {
+          final errorString = bindings.duckdb_result_error(result).readString();
+          throw DuckDBException(errorString);
+        } finally {
+          bindings.duckdb_destroy_result(result);
+          result.free();
+        }
       }
       return result.address;
     } finally {

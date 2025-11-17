@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- html_template.html.tpl -->
+<html>
+  <head>
+    <title>{{testName}} Test</title>
+    {{testScript}}
+    <script type="importmap">
+    {
+        "imports": {
+            "apache-arrow": "https://cdn.jsdelivr.net/npm/apache-arrow@17.0.0/+esm"
+        }
+    }
+    </script>
+    <script type="module">
+        import * as duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.1-dev222.0/+esm";
+        import * as arrow from "apache-arrow";
+        window.duckdbWasmReady = new Promise((resolve) => {
+            window.duckdbduckdbWasm = duckdb;
+            window.ArrowTable = arrow.Table;
+            resolve();
+        });
+    </script>
+    <script src="packages/test/dart.js"></script>
+  </head>
+  <body>
+  </body>
+</html>
