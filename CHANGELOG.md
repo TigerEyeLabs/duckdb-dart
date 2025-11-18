@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.2
+
+- Add web folders
+
 ## 1.4.1
 
 - Upgrade to DuckDB 1.4.1
