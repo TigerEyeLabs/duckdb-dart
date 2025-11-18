@@ -68,7 +68,7 @@ DuckDB.dart is available on [pub.dev](https://pub.dev/packages/dart_duckdb). Add
 Run this command:
 
 ```bash
-$ flutter pub add dart_duckdb
+flutter pub add dart_duckdb
 ```
 
 This updates your `pubspec.yaml`:
@@ -83,7 +83,7 @@ dependencies:
 Run this command:
 
 ```bash
-$ dart pub add dart_duckdb
+dart pub add dart_duckdb
 ```
 
 This updates your `pubspec.yaml`:
@@ -120,7 +120,8 @@ Here's a simple example to start using DuckDB.dart:
 
 ```dart
 Future<void> main() async {
-  open.overrideFor(OperatingSystem.macOS, 'path/to/libduckdb.dylib');
+  // flutter builds bundle duckdb binaries, but this can be overriden
+  // open.overrideFor(OperatingSystem.macOS, 'path/to/libduckdb.dylib');
 
   final db = await duckdb.open(":memory:");
   final conn = await duckdb.connect(db);
@@ -248,8 +249,6 @@ A: Yes, built on the stable DuckDB engine, it's suitable for production use.
 
 **Q: How do I report a bug?**<br/>
 A: Open an issue on the GitHub issue tracker.
-
-
 
 ---
 

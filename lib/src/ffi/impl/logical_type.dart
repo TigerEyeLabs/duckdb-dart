@@ -74,3 +74,29 @@ extension DecimalLogicalType on LogicalType {
     );
   }
 }
+
+extension LogicalTypeAlias on LogicalType {
+  /// Returns the alias of this logical type, if set.
+  /// Returns null if no alias is set.
+  ///
+  /// Aliases are used for:
+  /// - JSON type (underlying VARCHAR with 'JSON' alias)
+  /// - User-defined types (e.g., CREATE TYPE email AS VARCHAR)
+  /// - Domain types with constraints
+  String? get alias {
+    final aliasPtr = _bindings.duckdb_logical_type_get_alias(handle[0]);
+    if (aliasPtr.address == 0) {
+      return null;
+    }
+    final alias = aliasPtr.readString();
+    _bindings.duckdb_free(aliasPtr.cast<Void>());
+    return alias;
+  }
+
+  /// Returns true if this logical type has the JSON alias.
+  bool get isJson => alias?.toUpperCase() == 'JSON';
+
+  /// Returns true if this has a custom alias (user-defined type or domain).
+  /// This excludes well-known aliases like JSON.
+  bool get hasCustomAlias => alias != null && !isJson;
+}

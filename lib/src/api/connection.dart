@@ -21,7 +21,10 @@ abstract class Connection {
 
   /// Creates a prepared statement from a query
   /// Can be cancelled,but not interrupted via token
-  Future<PreparedStatement> prepare(String query);
+  Future<PreparedStatement> prepare(
+    String query, {
+    DuckDBCancellationToken? token,
+  });
 
   /// Creates an appender for inserting data into a table
   Future<Appender> append(String table, String? schema);

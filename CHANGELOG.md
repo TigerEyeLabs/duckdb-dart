@@ -1,12 +1,20 @@
 # Changelog
 
-## 1.2.2
-- ✨ Added duckdb 1.2.2
-- 🔧 Readme cleanup 
+## 1.4.1
+
+- Upgrade to DuckDB 1.4.1
+- Add JSON column support
+- Add web/WASM support for DuckDB
+- Update platform-specific build configurations
+- Update test suite with new type tests
+- Bump Flutter and dependency versions
+
+## 1.3.2
+
+- bump duckdb version
 
 ## 1.2.0
-- ✨ Moved to async calls, managing isolate communication internally.
-- ✨ Added duckdb 1.2.1
+- ✨ Added Web support via DuckDB WASM
 
 ## 1.1.3
 - ✨ Added support for all DuckDB datatypes

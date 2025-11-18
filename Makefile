@@ -3,46 +3,63 @@ LINE_COVERAGE_THRESHOLD := 0
 BRANCH_COVERAGE_THRESHOLD := 0
 
 CHECK_GIT ?= 0
+PLATFORM ?=
 
-FLUTTER_VERSION := 3.29.2
+FLUTTER_VERSION := 3.35.3
 
-RUN_CHROME_TESTS ?= 0
-
-# Detect the operating system using uname
-OS := $(shell uname 2>/dev/null || echo Windows)
-
-ifeq ($(OS),Darwin)
-	BUILD_OS := macos
-else ifeq ($(OS),Linux)
-	BUILD_OS := linux
-else
+# Detect the operating system
+ifeq ($(OS),Windows_NT)
 	BUILD_OS := windows
+	MKDIR_CMD := powershell -Command "New-Item -ItemType Directory -Force -Path"
+	RM_CMD := powershell -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue"
+	TEST_PATH_CMD := powershell -Command "Test-Path"
+	GET_CMD := powershell -Command "Get-Command"
+	WRITE_HOST := powershell -Command "Write-Host"
+	WHERE_OBJECT := powershell -Command "Where-Object"
+	FOR_EACH_OBJECT := powershell -Command "ForEach-Object"
+	SELECT_OBJECT := powershell -Command "Select-Object"
+	SUBSTRING := powershell -Command "Substring"
+	LCOV_PATH := $(shell powershell -Command "if (Test-Path 'C:\ProgramData\chocolatey\lib\lcov\tools\bin\lcov') { Write-Output 'C:\ProgramData\chocolatey\lib\lcov\tools\bin\lcov' } else { Write-Output 'lcov' }")
+	GENHTML_PATH := $(shell powershell -Command "if (Test-Path 'C:\ProgramData\chocolatey\lib\lcov\tools\bin\genhtml') { Write-Output 'C:\ProgramData\chocolatey\lib\lcov\tools\bin\genhtml' } else { Write-Output 'genhtml' }")
+else
+	BUILD_OS := $(shell uname)
+	# Unix commands
+	MKDIR_CMD := mkdir -p
+	RM_CMD := rm -rf
+	LCOV_PATH := lcov
+	GENHTML_PATH := genhtml
 endif
 
-ifeq ($(BUILD_OS), windows)
-	GENHTML := $(shell powershell -Command "(Get-Command genhtml).Source")
-	PERL := $(shell powershell -Command "(Get-Command perl).Source")
-else
-	GENHTML := $(shell which genhtml)
-	PERL := $(shell which perl)
+ifeq ($(BUILD_OS),Darwin)
+	BUILD_OS := macos
+else ifeq ($(BUILD_OS),Linux)
+	BUILD_OS := linux
 endif
 
 .PHONY: setup
-setup:
-	fvm install ${FLUTTER_VERSION}
-	fvm use -f ${FLUTTER_VERSION}
+setup: ## Setup development environment
+	fvm install ${FLUTTER_VERSION} --skip-pub-get
+	fvm use ${FLUTTER_VERSION} --skip-setup
+
+.PHONY: ffigen
+ffigen: setup ## Generate FFI bindings
+ifeq ($(BUILD_OS),windows)
+	@powershell -NoProfile -Command "if (-not (Test-Path 'lib/src/ffi/duckdb.g.dart')) { fvm flutter pub global activate ffigen; fvm dart run ffigen --config ffi_native.yaml }"
+else
+	@if [ ! -f "lib/src/ffi/duckdb.g.dart" ]; then \
+		fvm flutter pub global activate ffigen; \
+		fvm dart run ffigen --config ffi_native.yaml; \
+	fi
+endif
 
 clean: setup ## Remove build artifacts
 	fvm flutter clean
-ifeq ($(BUILD_OS),windows)
-	powershell -Command "if (Test-Path coverage) { Remove-Item -Recurse -Force coverage }"
-else
-	rm -rf coverage
-endif
+	$(RM_CMD) coverage
+	$(RM_CMD) lib/src/ffi/duckdb.g.dart
 
-build: setup ## Build the package
-	fvm flutter pub get
-	fvm dart run ffigen --config ffi_native.yaml
+build: setup ffigen ## Build the package
+	fvm flutter pub get --offline || fvm flutter pub get
+ifneq ($(BUILD_OS),windows)
 	@if [ $(CHECK_GIT) -eq 1 ] && [ -n "$$(git status --porcelain | grep -v '^\?\? ' | grep -v '^A  ')" ]; then \
 		{ echo "Uncommitted changes detected. Failing the build."; \
 		git status --porcelain | grep -v '^\?\? ' | grep -v '^A  ' | cut -c 4-; \
@@ -50,42 +67,51 @@ build: setup ## Build the package
 		} > /dev/stdout; \
 		exit 1; \
 	fi
+endif
 
 .PHONY: test
-test: build ## Run base unit tests
-	mkdir -p coverage/vm
-	# Run VM tests
-	fvm dart test --platform vm --coverage=./coverage/vm --reporter json > coverage/report-duckdb.dart.jsonl
-ifeq ($(RUN_CHROME_TESTS),1)
-	mkdir -p coverage/chrome
-	# Run Chrome tests with additional flags
-	fvm dart test --platform chrome --coverage=./coverage/chrome
-	# Merge and format coverage for both VM and Chrome
-	fvm dart run coverage:format_coverage \
-		-i ./coverage/vm \
-		-i ./coverage/chrome \
-		-o ./coverage/duckdb.dart.lcov \
-		--lcov \
-		--report-on lib/
+test: build ## Run VM tests without coverage
+	@echo "=== Starting test execution ==="
+ifneq ($(PLATFORM),)
+	fvm dart test --platform $(PLATFORM)
 else
-	# Format coverage for VM only
-	fvm dart run coverage:format_coverage \
-		-i ./coverage/vm \
-		-o ./coverage/duckdb.dart.lcov \
-		--lcov \
-		--report-on lib/
+	fvm dart test
 endif
-	lcov --remove coverage/duckdb.dart.lcov '*.g.dart' -o coverage/duckdb.dart.lcov
-	lcov --rc lcov_branch_coverage=1 --summary coverage/duckdb.dart.lcov > coverage/duckdb.dart-summary.info
-ifeq ($(BUILD_OS), windows)
-	@powershell -Command "$(PERL) $(GENHTML) --branch-coverage coverage/duckdb.dart.lcov -o coverage/html"
+
+.PHONY: test-coverage
+test-coverage: build ## Run VM tests with coverage report
+	@echo "=== Starting test execution with coverage ==="
+	@echo "Creating coverage directory..."
+	$(MKDIR_CMD) coverage/vm
+	@echo "Running VM tests..."
+ifneq ($(PLATFORM),)
+	fvm dart test --coverage=./coverage/vm --reporter json --platform $(PLATFORM) > coverage/report-duckdb.dart.jsonl
 else
-	genhtml coverage/duckdb.dart.lcov --branch-coverage -o coverage/html
+	fvm dart test --coverage=./coverage/vm --reporter json > coverage/report-duckdb.dart.jsonl
+endif
+	@echo "Formatting coverage data..."
+	fvm dart run coverage:format_coverage \
+		-i ./coverage/vm \
+		-o ./coverage/duckdb.dart.lcov \
+		--lcov \
+		--report-on lib/
+	@echo "Processing coverage data..."
+ifneq ($(BUILD_OS),windows)
+	@echo "Unix: Removing generated files from coverage..."
+	$(LCOV_PATH) --remove coverage/duckdb.dart.lcov '*.g.dart' -o coverage/duckdb.dart.lcov
+	@echo "Unix: Generating coverage summary..."
+	$(LCOV_PATH) --rc lcov_branch_coverage=1 --summary coverage/duckdb.dart.lcov > coverage/duckdb.dart-summary.info
+	$(GENHTML_PATH) coverage/duckdb.dart.lcov --branch-coverage -o coverage/html
+	@echo "=== Test execution completed ==="
+	@echo "Coverage report available in coverage/html/index.html"
 endif
 
 .PHONY: explorer
 explorer: ## Build and run duckdbexplorer
 	cd examples/duckdbexplorer && fvm flutter run -d $(BUILD_OS)
+
+explorer-web: ## Build and run duckdbexplorer
+	cd examples/duckdbexplorer && fvm flutter run -d chrome --web-browser-flag "--disable-web-security"
 
 analyze: setup ## Run flutter analyze
 	fvm flutter analyze --fatal-infos --fatal-warnings --write analyze.txt
@@ -118,6 +144,7 @@ android: ## Build for Android
 
 ## CI tasks
 quality: setup ## Run codequality for CI
+	fvm dart pub get
 	find . -name "*.dart" ! -name "*.g.dart" ! -path '*/.dart_tool/*' | tr '\n' ' ' | xargs fvm dart format --set-exit-if-changed --output=none
 
 .PHONY: help

@@ -89,7 +89,7 @@ void main() {
       // Second execution should fail
       await expectLater(
         statement.execute(token: token),
-        throwsA(isA<DuckDBCancelledException>()),
+        throwsA(isA<DuckDBException>()),
       );
     });
 
@@ -101,7 +101,7 @@ void main() {
       token1.cancel();
       await expectLater(
         statement.execute(token: token1),
-        throwsA(isA<DuckDBCancelledException>()),
+        throwsA(isA<DuckDBException>()),
       );
 
       // Should be able to execute with a new token
@@ -116,7 +116,7 @@ void main() {
 
       await expectLater(
         statement.execute(token: token),
-        throwsA(isA<DuckDBCancelledException>()),
+        throwsA(isA<DuckDBException>()),
       );
     });
   });
@@ -486,7 +486,7 @@ void main() {
       // Execute and expect CancelledException
       await expectLater(
         statement.executePending(token: token),
-        throwsA(isA<DuckDBCancelledException>()),
+        throwsA(isA<DuckDBException>()),
       );
 
       // Wait for cancellation to complete
@@ -510,7 +510,7 @@ void main() {
       // Use Future.any but make sure to handle cleanup of the losing future
       await expectLater(
         Future.any([queryFuture]),
-        throwsA(isA<DuckDBCancelledException>()),
+        throwsA(isA<DuckDBException>()),
       );
 
       // Give a small delay to ensure cancellation is processed

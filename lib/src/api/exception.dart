@@ -1,25 +1,29 @@
 class DuckDBException implements Exception {
-  String message = 'unknown database error';
+  final String message;
+  final StackTrace? stackTrace;
 
-  DuckDBException(this.message);
+  DuckDBException(
+    this.message, {
+    StackTrace? stackTrace,
+  }) : stackTrace = stackTrace ?? StackTrace.current;
 
   @override
   String toString() {
+    if (stackTrace != null) {
+      return '$message\n$stackTrace';
+    }
     return message;
   }
 }
 
-class DuckDBCancelledException implements Exception {
-  /// The SQL query that was cancelled
-  final String? sql;
-
-  DuckDBCancelledException([this.sql]);
+class DuckDBCancelledException extends DuckDBException {
+  DuckDBCancelledException(
+    super.message, {
+    super.stackTrace,
+  });
 
   @override
   String toString() {
-    if (sql != null) {
-      return 'Operation was cancelled: $sql';
-    }
-    return 'Operation was cancelled';
+    return 'DuckDB operation was cancelled: ${super.toString()}';
   }
 }

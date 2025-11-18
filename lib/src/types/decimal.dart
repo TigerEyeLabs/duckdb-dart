@@ -158,8 +158,13 @@ class Decimal implements Comparable<Decimal> {
   @override
   String toString() {
     var numStr = _number.toString();
-    if (_scale <= 0) {
-      return '${numStr}e$_scale';
+    if (_scale < 0) {
+      // For negative scales, multiply by powers of 10
+      final multiplier = BigInt.from(10).pow(-_scale);
+      final result = _number * multiplier;
+      return result.toString();
+    } else if (_scale == 0) {
+      return numStr;
     } else {
       // calculate the position to insert the decimal point
       var decimalPointPos = numStr.length - _scale;

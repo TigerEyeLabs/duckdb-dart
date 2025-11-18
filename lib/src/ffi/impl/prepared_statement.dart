@@ -55,25 +55,29 @@ class PreparedStatementImpl extends PreparedStatement
 
   static Future<PreparedStatementImpl> prepare(
     ConnectionImpl connection,
-    String query,
-  ) async {
+    String query, {
+    DuckDBCancellationToken? token,
+  }) async {
     final bindings = (duckdb as DuckDB).bindings;
 
     final namedParameters = query.getNamedParameters();
 
-    // Use the connection's database thread
-    final statementPointer = await connection._isolate.execute(
-      PrepareOperation(
+    return connection.runWithCancellation(
+      operation: PrepareOperation(
         connectionPointer: connection.handle.address,
         query: query,
       ),
-    );
-
-    return PreparedStatementImpl._(
-      bindings,
-      connection,
-      Pointer<duckdb_prepared_statement>.fromAddress(statementPointer),
-      namedParameters.map((name) => name.substring(1)).toList(),
+      processResult: (future) async {
+        final statementPointer = await future;
+        return PreparedStatementImpl._(
+          bindings,
+          connection,
+          Pointer<duckdb_prepared_statement>.fromAddress(statementPointer),
+          namedParameters.map((name) => name.substring(1)).toList(),
+        );
+      },
+      operationDescription: 'prepare statement',
+      token: token,
     );
   }
 
@@ -360,9 +364,18 @@ class PreparedStatementImpl extends PreparedStatement
       ),
       processResult: (future) async {
         final resultPointer = await future;
-        return ResultSetImpl.withResult(
-          Pointer<duckdb_result>.fromAddress(resultPointer),
-        );
+        final result = Pointer<duckdb_result>.fromAddress(resultPointer);
+
+        final error = _bindings.duckdb_result_error(result);
+        if (!error.isNullPointer) {
+          try {
+            final errorString = error.readString();
+            throw DuckDBException(errorString);
+          } finally {
+            _bindings.duckdb_destroy_result(result);
+          }
+        }
+        return ResultSetImpl.withResult(result);
       },
       operationDescription: 'execute prepared statement',
       token: token,
@@ -384,9 +397,18 @@ class PreparedStatementImpl extends PreparedStatement
       ),
       processResult: (future) async {
         final resultPointer = await future;
-        return ResultSetImpl.withResult(
-          Pointer<duckdb_result>.fromAddress(resultPointer),
-        );
+        final result = Pointer<duckdb_result>.fromAddress(resultPointer);
+
+        final error = _bindings.duckdb_result_error(result);
+        if (!error.isNullPointer) {
+          try {
+            final errorString = error.readString();
+            throw DuckDBException(errorString);
+          } finally {
+            _bindings.duckdb_destroy_result(result);
+          }
+        }
+        return ResultSetImpl.withResult(result);
       },
       operationDescription: 'execute pending prepared statement',
       token: token,
@@ -415,10 +437,13 @@ class PrepareOperation extends DatabaseOperation {
           outPrepare,
         ) ==
         duckdb_state.DuckDBError) {
-      final error =
-          bindings.duckdb_prepare_error(outPrepare.value).readString();
-      outPrepare.free();
-      throw DuckDBException(error);
+      try {
+        final errorString =
+            bindings.duckdb_prepare_error(outPrepare.value).readString();
+        throw DuckDBException(errorString);
+      } finally {
+        bindings.duckdb_destroy_prepare(outPrepare);
+      }
     }
 
     return outPrepare.address;
@@ -463,17 +488,24 @@ class ExecutePreparedPendingOperation extends DatabaseOperation {
                 result,
               ) ==
               duckdb_state.DuckDBError) {
-            throw DuckDBException(
-              bindings.duckdb_result_error(result).readString(),
-            );
+            try {
+              final errorString =
+                  bindings.duckdb_result_error(result).readString();
+              throw DuckDBException(errorString);
+            } finally {
+              bindings.duckdb_destroy_result(result);
+            }
           }
           break;
         } else if (state == PendingResultState.error) {
-          throw DuckDBException(
-            bindings
+          try {
+            final errorString = bindings
                 .duckdb_pending_error(pendingResultHandle.value)
-                .readString(),
-          );
+                .readString();
+            throw DuckDBException(errorString);
+          } finally {
+            bindings.duckdb_destroy_pending(pendingResultHandle);
+          }
         }
       }
 
@@ -500,18 +532,17 @@ class ExecutePreparedOperation extends DatabaseOperation {
         Pointer<duckdb_prepared_statement>.fromAddress(statementPointer);
     final result = allocate<duckdb_result>();
 
-    try {
-      if (bindings.duckdb_execute_prepared(statement.value, result) ==
-          duckdb_state.DuckDBError) {
-        throw DuckDBException(
-          bindings.duckdb_result_error(result).readString(),
-        );
+    if (bindings.duckdb_execute_prepared(statement.value, result) ==
+        duckdb_state.DuckDBError) {
+      try {
+        final errorString = bindings.duckdb_result_error(result).readString();
+        throw DuckDBException(errorString);
+      } finally {
+        bindings.duckdb_destroy_result(result);
+        result.free();
       }
-
-      return result.address;
-    } catch (e) {
-      result.free();
-      rethrow;
     }
+
+    return result.address;
   }
 }

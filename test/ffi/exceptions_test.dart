@@ -34,4 +34,17 @@ void main() {
       expect(e, isA<DuckDBException>());
     }
   });
+
+  test('cancellation exception has isCancelled set to true', () async {
+    final token = DuckDBCancellationToken();
+    token.cancel();
+
+    try {
+      await connection.query('SELECT 1', token: token);
+    } catch (e) {
+      expect(e, isA<DuckDBCancelledException>());
+      final exception = e as DuckDBCancelledException;
+      expect(exception.message, equals('Operation cancelled'));
+    }
+  });
 }

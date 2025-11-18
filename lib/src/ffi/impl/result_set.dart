@@ -183,7 +183,9 @@ class ResultSetImpl extends ResultSet {
     _isClosed = true;
   }
 
-  LogicalType _logicalType(int columnIndex) {
+  /// Returns the logical type for a given column index.
+  /// This includes information about aliases (e.g., JSON, user-defined types).
+  LogicalType logicalType(int columnIndex) {
     final type = _logicalTypes[columnIndex];
     if (type != null) {
       return type;
@@ -203,6 +205,8 @@ class ResultSetImpl extends ResultSet {
         LogicalType.withLogicalType(logicalTypePointer);
   }
 
+  LogicalType _logicalType(int columnIndex) => logicalType(columnIndex);
+
   T? Function(int) transformOrNull<T>(int columnIndex) {
     return transformer<T?>(columnIndex, (Vector<T?> vector, int elementIndex) {
       return vector.getValue(elementIndex);
@@ -213,6 +217,28 @@ class ResultSetImpl extends ResultSet {
   Column<dynamic> operator [](int index) {
     if (index >= columnCount) {
       throw IndexError.withLength(index, columnCount);
+    }
+
+    // Check if this column is JSON type (based on logical type alias)
+    final logicalType = _logicalType(index);
+    if (logicalType.isJson) {
+      // JSON types are returned as VARCHAR from the C API, but we can parse them
+      return _columnCache[index] ??= ColumnImpl<dynamic>(
+        this,
+        index,
+        (rowIndex) {
+          final jsonString = transformOrNull<String>(index)(rowIndex);
+          if (jsonString == null) {
+            return null;
+          }
+          try {
+            return jsonDecode(jsonString);
+          } catch (e) {
+            // If JSON parsing fails, return the string as-is
+            return jsonString;
+          }
+        },
+      );
     }
 
     return _columnCache[index] ??= switch (columnDataType(index)) {

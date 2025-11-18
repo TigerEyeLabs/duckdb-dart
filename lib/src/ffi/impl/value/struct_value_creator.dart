@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:dart_duckdb/dart_duckdb.dart';
 import 'package:dart_duckdb/src/ffi/duckdb.g.dart';
-import 'package:dart_duckdb/src/ffi/impl/database_type_native.dart';
 import 'package:dart_duckdb/src/ffi/impl/implementation.dart';
 import 'package:dart_duckdb/src/ffi/impl/utils.dart';
 import 'package:dart_duckdb/src/ffi/impl/value/list_value_creator.dart';

@@ -2,7 +2,6 @@ import 'dart:ffi';
 
 import 'package:dart_duckdb/dart_duckdb.dart';
 import 'package:dart_duckdb/src/ffi/duckdb.g.dart';
-import 'package:dart_duckdb/src/ffi/impl/database_type_native.dart';
 import 'package:dart_duckdb/src/ffi/impl/implementation.dart';
 import 'package:dart_duckdb/src/ffi/impl/vector/transformer_registry.dart';
 

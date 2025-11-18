@@ -36,8 +36,18 @@ class _IsolateRegistry {
   }
 }
 
+/// Helper class to hold a pending operation along with its ID and completer.
+class _PendingOperation {
+  final String id;
+  final DatabaseOperation operation;
+  final Completer<int> completer;
+
+  _PendingOperation(this.id, this.operation, this.completer);
+}
+
 class ConnectionIsolate {
   static final _log = Logger('duckdb');
+  static final _uuid = Uuid(goptions: GlobalOptions(MathRNG()));
 
   // Port for receiving messages from the worker isolate
   final ReceivePort _receivePort = ReceivePort();
@@ -48,50 +58,56 @@ class ConnectionIsolate {
   // Port for sending messages to the worker isolate
   late final SendPort _sendPort;
 
+  // Queue for pending operations in the main isolate.
+  final Queue<_PendingOperation> _pendingOperations =
+      Queue<_PendingOperation>();
+
+  // Track the currently executing operation ID (if any).
+  String? _currentOperationId;
+
+  // Track the last cancelled operation ID
+  String? _lastCancelledId;
+
   // Maps operation IDs to their completion handlers
-  final _responseCompleters = <int, Completer<int>>{};
+  final _responseCompleters = <String, Completer<int>>{};
 
-  // Track the currently executing operation ID
-  int? _currentOperationId;
-
-  // Subscription for handling messages from the worker isolate
+  // Subscriptions for receiving messages
   late final StreamSubscription<dynamic> _subscription;
-
-  // Subscription for handling error messages from the worker isolate
   late final StreamSubscription<dynamic> _errorSubscription;
 
-  // Counter for generating unique operation IDs
-  int _nextOperationId = 0;
-
   // Unique identifier for debugging this isolate instance
-  String _debugId = const Uuid().v4().substring(0, 8);
+  final String _debugId;
 
   // Getter for currently executing operation ID
-  int? get currentOperationId => _currentOperationId;
+  String? get currentOperationId => _currentOperationId;
 
-  ConnectionIsolate._();
+  /// Generates a new unique operation ID.
+  String _nextOperationId() => _uuid.v4().substring(0, 8);
 
+  ConnectionIsolate._(this._debugId);
+
+  /// Factory method to create a new isolate.
+  ///
+  /// The [id] parameter is optional and can be used to provide a custom identifier
+  /// for debugging purposes.
   static Future<ConnectionIsolate> create({String? id}) async {
-    final isolate = ConnectionIsolate._();
-    // Append the optional id to the debug ID if provided
-    if (id != null) {
-      isolate._debugId = '${isolate._debugId}-$id';
-    }
+    final debugId = '${_uuid.v4().substring(0, 8)}${id != null ? '-$id' : ''}';
+    final isolate = ConnectionIsolate._(debugId);
     _log.fine(
-      'Creating new isolate: ${isolate._debugId}. Current isolates: ${_IsolateRegistry.instance.getActiveIsolatesInfo()}',
+      'Creating new isolate: $debugId. Current isolates: ${_IsolateRegistry.instance.getActiveIsolatesInfo()}',
     );
-    _IsolateRegistry.instance.register(isolate._debugId);
+    _IsolateRegistry.instance.register(debugId);
 
     try {
       await isolate._initialize();
       return isolate;
     } catch (e, st) {
       _log.severe(
-        'Failed to create isolate ${isolate._debugId}. Active isolates: ${_IsolateRegistry.instance.getActiveIsolatesInfo()}',
+        'Failed to create isolate $debugId. Active isolates: ${_IsolateRegistry.instance.getActiveIsolatesInfo()}',
         e,
         st,
       );
-      _IsolateRegistry.instance.unregister(isolate._debugId);
+      _IsolateRegistry.instance.unregister(debugId);
       rethrow;
     }
   }
@@ -110,14 +126,28 @@ class ConnectionIsolate {
     // Handle error messages
     _errorSubscription = _errorPort.listen((message) {
       if (message is List) {
-        if (message.length == 2 &&
-            message[0] is String &&
-            message[1] is StackTrace) {
-          // Error message
-          _log.severe('Error in isolate:', message[0], message[1]);
-        } else if (message.length == 1 && message[0] is int) {
-          // Exit message
-          _log.fine('Isolate exit code: ${message[0]}');
+        final (error, stackTrace) = switch (message) {
+          [String e, StackTrace st] => (e, st),
+          [int code] when code != 0 => (
+              'Isolate terminated with exit code: $code',
+              null
+            ),
+          _ => (null, null),
+        };
+
+        if (error != null) {
+          if (stackTrace != null) {
+            _log.severe('Isolate crashed:', error, stackTrace);
+          } else {
+            _log.fine(error);
+          }
+
+          _clearPendingRequests();
+          if (_currentOperationId != null) {
+            final completer = _responseCompleters.remove(_currentOperationId);
+            completer?.completeError(StateError(error), stackTrace);
+            _currentOperationId = null;
+          }
         }
       }
     });
@@ -125,7 +155,7 @@ class ConnectionIsolate {
     _log.fine('Starting isolate DuckDB-$_debugId');
     await Isolate.spawn(
       _isolateFunction,
-      (_receivePort.sendPort, _debugId),
+      (_receivePort.sendPort, _errorPort.sendPort, _debugId),
       debugName: 'DuckDB-$_debugId',
       errorsAreFatal: true,
       onError: _errorPort.sendPort,
@@ -135,10 +165,6 @@ class ConnectionIsolate {
     _sendPort = await sendPortCompleter.future;
     _log.fine('Received SendPort from isolate');
 
-    // Add a small delay to ensure setup is complete
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    // Verify the isolate is still active
     if (!_IsolateRegistry.instance.isActive(_debugId)) {
       throw StateError('Isolate became inactive during initialization');
     }
@@ -147,49 +173,54 @@ class ConnectionIsolate {
   void _handleResponse(Object? message) {
     _log.fine('Received message: ${message.runtimeType}');
 
-    // Handle error and exit messages
-    if (message is List) {
-      if (message.length == 2 &&
-          message[0] is String &&
-          message[1] is StackTrace) {
-        // Error message
-        _log.severe('Error in isolate:', message[0], message[1]);
-      } else if (message.length == 1 && message[0] is int) {
-        // Exit message
-        _log.fine('Isolate exit code: ${message[0]}');
-      }
-      return;
-    }
+    switch (message) {
+      case _IsolateOperationStart(:final id):
+        _currentOperationId = id;
+        _log.fine('Operation $id started');
+      case _IsolateResponse(:final id, :final error, :final result):
+        _log.fine('Handling response for $id');
+        _currentOperationId = null;
 
-    if (message is _IsolateOperationStart) {
-      _currentOperationId = message.id;
-      _log.fine('Operation ${message.id} started');
-    } else if (message is _IsolateResponse) {
-      _log.fine('Handling response for ${message.id}');
-      _currentOperationId = null;
-      final completer = _responseCompleters.remove(message.id);
-      if (completer != null) {
-        if (message.error != null) {
-          completer.completeError(message.error!);
+        // Complete current operation
+        final completer = _responseCompleters.remove(id);
+        if (completer != null) {
+          if (error != null) {
+            completer.completeError(error);
+          } else if (id == _lastCancelledId) {
+            /// If the operation was cancelled while being sent to the connection
+            /// isolate, we need to complete the operation with a cancelled exception.
+            completer.completeError(
+              DuckDBCancelledException('Operation was cancelled'),
+            );
+          } else {
+            completer.complete(result);
+          }
         } else {
-          completer.complete(message.result);
+          _log.warning('No completer found for response $id');
         }
-      } else {
-        _log.warning('No completer found for response ${message.id}');
-      }
-    } else if (message is SendPort) {
-      _log.fine('Received SendPort from isolate');
-    } else if (message is _IsolateShutdown) {
-      _log.warning('Received unexpected shutdown message');
-      // Don't handle shutdown messages in _handleResponse
-      return;
-    } else {
-      _log.warning('Received unknown message type: ${message.runtimeType}');
+
+        // Remove completed operation and send next if available
+        if (_pendingOperations.isNotEmpty &&
+            _pendingOperations.first.id == id) {
+          _pendingOperations.removeFirst();
+          if (_pendingOperations.isNotEmpty) {
+            final nextOp = _pendingOperations.first;
+            _sendPort.send(_IsolateRequest(nextOp.id, nextOp.operation));
+          }
+        }
+      case SendPort():
+        _log.fine('Received SendPort from isolate');
+      case _IsolateShutdown():
+        _log.fine('Received shutdown message');
+      default:
+        _log.warning('Received unknown message type: ${message?.runtimeType}');
     }
   }
 
-  static Future<void> _isolateFunction((SendPort, String) params) async {
-    final (sendPort, debugId) = params;
+  static Future<void> _isolateFunction(
+    (SendPort, SendPort, String) params,
+  ) async {
+    final (sendPort, errorPort, debugId) = params;
     final receivePort = ReceivePort();
     final log = Logger('duckdb');
 
@@ -205,9 +236,18 @@ class ConnectionIsolate {
     // Create a completer to handle shutdown
     final shutdownCompleter = Completer<void>();
 
-    // Listen for messages
+    // Create a stream controller for message handling
+    final messageController = StreamController<dynamic>();
+    final messageStream = messageController.stream;
+
+    // Listen for data messages and add them to the stream
     receivePort.listen((message) {
-      log.fine('[Isolate:$debugId] Received message: ${message.runtimeType}');
+      messageController.add(message);
+    });
+
+    // Process messages from the stream
+    messageStream.listen((message) async {
+      log.fine('[Isolate:$debugId] Processing message: ${message.runtimeType}');
 
       // Handle error and exit messages
       if (message is List) {
@@ -223,32 +263,31 @@ class ConnectionIsolate {
         return;
       }
 
-      if (message is _IsolateShutdown) {
-        log.fine('[Isolate:$debugId] Received shutdown request');
-        shutdownCompleter.complete();
-        return;
-      }
-
       if (message is _IsolateRequest) {
         log.fine('[Isolate:$debugId] Received request ${message.id}');
 
         // Send back that we're starting this operation
-        sendPort.send(_IsolateOperationStart(message.id));
+        sendPort.send(_IsolateOperationStart(message.id, message.operation));
 
         // Execute the operation
-        message.operation.execute().then((result) {
+        try {
+          final result = await message.operation.execute();
           log.fine(
             '[Isolate:$debugId] Completed request ${message.id} with result: $result',
           );
           sendPort.send(_IsolateResponse(message.id, result: result));
-        }).catchError((e, st) {
+        } catch (e, st) {
           log.severe(
             '[Isolate:$debugId] Error in request ${message.id}',
             e,
             st,
           );
+
           sendPort.send(_IsolateResponse(message.id, error: e));
-        });
+        }
+      } else if (message is _IsolateShutdown) {
+        log.fine('[Isolate:$debugId] Received shutdown request');
+        shutdownCompleter.complete();
       } else if (message == null) {
         log.warning('[Isolate:$debugId] Received null message, ignoring');
       } else {
@@ -262,47 +301,49 @@ class ConnectionIsolate {
     await shutdownCompleter.future;
 
     // Cleanup
+    await messageController.close();
     receivePort.close();
-    log.fine('[Isolate:$debugId] ReceivePort closed');
+    log.fine('[Isolate:$debugId] ReceivePorts closed');
 
     // Kill the isolate after cleanup
     Isolate.current.kill(priority: Isolate.immediate);
   }
 
-  Future<int> execute(DatabaseOperation operation) async {
+  /// Executes an operation and returns both the operation ID and future result.
+  (String id, Future<int> result) execute(DatabaseOperation operation) {
     if (!_IsolateRegistry.instance.isActive(_debugId)) {
       throw StateError('Isolate is disposed or shutting down');
     }
-
-    final id = _nextOperationId++;
+    final id = _nextOperationId();
     final completer = Completer<int>();
     _responseCompleters[id] = completer;
 
-    _sendPort.send(_IsolateRequest(id, operation));
+    // Just add to pending queue - no immediate dispatch
+    final pendingOp = _PendingOperation(id, operation, completer);
+    _pendingOperations.add(pendingOp);
 
-    return completer.future;
-  }
-
-  /// Executes an operation and returns both the operation ID and future result
-  (int operationId, Future<int> future) executeWithId(
-    DatabaseOperation operation,
-  ) {
-    if (!_IsolateRegistry.instance.isActive(_debugId)) {
-      throw StateError('Isolate is disposed or shutting down');
+    // If this is the first operation (no current operation), start it
+    if (_currentOperationId == null && _pendingOperations.length == 1) {
+      final op = _pendingOperations.first;
+      _sendPort.send(_IsolateRequest(op.id, op.operation));
     }
-
-    final id = _nextOperationId++;
-    final completer = Completer<int>();
-    _responseCompleters[id] = completer;
-
-    _sendPort.send(_IsolateRequest(id, operation));
 
     return (id, completer.future);
   }
 
   void _clearPendingRequests() {
-    final pendingCompleters =
-        Map<int, Completer<int>>.from(_responseCompleters);
+    // Clear pending operations from the queue.
+    while (_pendingOperations.isNotEmpty) {
+      final op = _pendingOperations.removeFirst();
+      final completer = _responseCompleters.remove(op.id);
+      completer?.completeError(
+        StateError('Connection is being disposed, operation interrupted'),
+      );
+    }
+    // Clear any remaining completers.
+    final pendingCompleters = Map<String, Completer<int>>.from(
+      _responseCompleters,
+    );
     for (final entry in pendingCompleters.entries) {
       _log.fine('Clearing request ${entry.key}');
       entry.value.completeError(
@@ -310,7 +351,29 @@ class ConnectionIsolate {
       );
       _responseCompleters.remove(entry.key);
     }
-    _nextOperationId = 0;
+  }
+
+  /// Cancel a pending operation if it's still in the queue.
+  Future<void> cancelOperation(String operationId) async {
+    if (!_IsolateRegistry.instance.isActive(_debugId)) {
+      throw StateError('Isolate is disposed or shutting down');
+    }
+
+    _lastCancelledId = operationId;
+
+    // Check if the operation is still pending.
+    final pendingOp =
+        _pendingOperations.where((op) => op.id == operationId).firstOrNull;
+    if (pendingOp != null && _pendingOperations.last.id != operationId) {
+      _pendingOperations.remove(pendingOp);
+      final completer = _responseCompleters.remove(operationId);
+      _log.fine(
+        'Cancelled operation $operationId. Queue size: ${_pendingOperations.length}',
+      );
+      completer?.completeError(
+        DuckDBCancelledException('Operation was cancelled'),
+      );
+    }
   }
 
   Future<void> dispose() async {
@@ -325,12 +388,10 @@ class ConnectionIsolate {
       'Starting dispose... Active isolates: ${_IsolateRegistry.instance.getActiveIsolatesInfo()}',
     );
 
-    // Mark as shutting down first to prevent new requests
     _IsolateRegistry.instance.markShuttingDown(_debugId);
     _sendPort.send(const _IsolateShutdown());
 
     try {
-      // Wait for current operation if any
       if (_currentOperationId != null) {
         final currentCompleter = _responseCompleters[_currentOperationId!];
         if (currentCompleter != null) {
@@ -348,13 +409,9 @@ class ConnectionIsolate {
       );
       rethrow;
     } finally {
-      // Now clear any remaining requests
       _clearPendingRequests();
 
-      await Future.wait([
-        _subscription.cancel(),
-        _errorSubscription.cancel(),
-      ]);
+      await Future.wait([_subscription.cancel(), _errorSubscription.cancel()]);
 
       _responseCompleters.clear();
       _IsolateRegistry.instance.unregister(_debugId);
@@ -367,24 +424,22 @@ class ConnectionIsolate {
 abstract class DatabaseOperation {
   final int connectionPointer;
 
-  const DatabaseOperation({
-    required this.connectionPointer,
-  });
+  const DatabaseOperation({required this.connectionPointer});
 
   Future<int> execute();
 }
 
-/// Isolate Messages
+/// Isolate Messages, these are sent between the main isolate and the worker isolate.
 
 class _IsolateRequest {
-  final int id;
+  final String id;
   final DatabaseOperation operation;
 
   _IsolateRequest(this.id, this.operation);
 }
 
 class _IsolateResponse {
-  final int id;
+  final String id;
   final int? result;
   final Object? error;
 
@@ -392,9 +447,10 @@ class _IsolateResponse {
 }
 
 class _IsolateOperationStart {
-  final int id;
+  final String id;
+  final DatabaseOperation operation;
 
-  _IsolateOperationStart(this.id);
+  _IsolateOperationStart(this.id, this.operation);
 }
 
 class _IsolateShutdown {

@@ -2,7 +2,6 @@
 @TestOn('vm')
 
 import 'package:dart_duckdb/dart_duckdb.dart';
-import 'package:dart_duckdb/src/ffi/impl/database_type_native.dart';
 import 'package:test/test.dart';
 
 void main() {
