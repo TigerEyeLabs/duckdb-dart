@@ -219,8 +219,7 @@ DuckDB.dart supports the following platforms:
 - 🤖 Android
 - 🐧 Linux
 - 🪟 Windows
-
-> **Note:** Web support is currently not available but is planned for future releases.
+- 🕸️ Web
 
 See platform-specific details in the [Building Instructions](BUILDING.md)
 
@@ -237,9 +236,6 @@ If you have any questions, feedback or ideas, feel free to create an [issue](htt
 ---
 
 ## FAQ
-
-**Q: Does DuckDB.dart support Flutter web?**<br/>
-A: Not yet, but web support is planned.
 
 **Q: Can it handle large datasets?**<br/>
 A: Yes, DuckDB excels at processing large datasets efficiently, including direct file queries.
