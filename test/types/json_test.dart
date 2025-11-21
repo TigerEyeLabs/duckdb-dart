@@ -21,8 +21,9 @@ void main() {
         "SELECT '{\"name\": \"Alice\", \"age\": 30}'::JSON;",
       ))
           .fetchAll();
+      final jsonResult = result[0][0]! as JsonValue;
       expect(
-        result[0][0],
+        jsonResult.value,
         {'name': 'Alice', 'age': 30},
       );
     });
@@ -32,8 +33,9 @@ void main() {
         "SELECT '{\"user\": {\"name\": \"Bob\", \"id\": 123}, \"active\": true}'::JSON;",
       ))
           .fetchAll();
+      final jsonResult = result[0][0]! as JsonValue;
       expect(
-        result[0][0],
+        jsonResult.value,
         {
           'user': {'name': 'Bob', 'id': 123},
           'active': true,
@@ -46,7 +48,8 @@ void main() {
         "SELECT '[1, 2, 3, 4, 5]'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], [1, 2, 3, 4, 5]);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, [1, 2, 3, 4, 5]);
     });
 
     test('query should return JSON array of objects', () async {
@@ -54,8 +57,9 @@ void main() {
         "SELECT '[{\"name\": \"Alice\"}, {\"name\": \"Bob\"}]'::JSON;",
       ))
           .fetchAll();
+      final jsonResult = result[0][0]! as JsonValue;
       expect(
-        result[0][0],
+        jsonResult.value,
         [
           {'name': 'Alice'},
           {'name': 'Bob'},
@@ -71,12 +75,14 @@ void main() {
 
     test('query should return empty JSON object', () async {
       final result = (await connection.query("SELECT '{}'::JSON;")).fetchAll();
-      expect(result[0][0], {});
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, {});
     });
 
     test('query should return empty JSON array', () async {
       final result = (await connection.query("SELECT '[]'::JSON;")).fetchAll();
-      expect(result[0][0], []);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, []);
     });
 
     test('query should handle JSON with mixed types', () async {
@@ -84,8 +90,9 @@ void main() {
         "SELECT '{\"string\": \"hello\", \"number\": 42, \"float\": 3.14, \"bool\": true, \"null\": null}'::JSON;",
       ))
           .fetchAll();
+      final jsonResult = result[0][0]! as JsonValue;
       expect(
-        result[0][0],
+        jsonResult.value,
         {
           'string': 'hello',
           'number': 42,
@@ -101,8 +108,9 @@ void main() {
         "SELECT '{\"a\": {\"b\": {\"c\": {\"d\": \"deep\"}}}}'::JSON;",
       ))
           .fetchAll();
+      final jsonResult = result[0][0]! as JsonValue;
       expect(
-        result[0][0],
+        jsonResult.value,
         {
           'a': {
             'b': {
@@ -118,8 +126,9 @@ void main() {
         "SELECT '{\"name\": \"Alice\", \"scores\": [95, 87, 92]}'::JSON;",
       ))
           .fetchAll();
+      final jsonResult = result[0][0]! as JsonValue;
       expect(
-        result[0][0],
+        jsonResult.value,
         {
           'name': 'Alice',
           'scores': [95, 87, 92],
@@ -132,8 +141,10 @@ void main() {
         "SELECT '{\"a\": 1}'::JSON as col1, '{\"b\": 2}'::JSON as col2;",
       ))
           .fetchAll();
-      expect(result[0][0], {'a': 1});
-      expect(result[0][1], {'b': 2});
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, {'a': 1});
+      final jsonResult2 = result[0][1]! as JsonValue;
+      expect(jsonResult2.value, {'b': 2});
     });
 
     test('query should handle JSON in table', () async {
@@ -150,7 +161,8 @@ void main() {
           .fetchAll();
 
       expect(result[0][0], 1);
-      expect(result[0][1], {'name': 'test'});
+      final jsonResult = result[0][1]! as JsonValue;
+      expect(jsonResult.value, {'name': 'test'});
 
       await connection.execute("DROP TABLE json_test;");
     });
@@ -162,7 +174,8 @@ void main() {
         "SELECT '\"hello world\"'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], 'hello world');
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, 'hello world');
     });
 
     test('should handle JSON string with special characters', () async {
@@ -170,7 +183,8 @@ void main() {
         "SELECT '\"hello\\nworld\\t\\\"escaped\\\"\"'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], 'hello\nworld\t"escaped"');
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, 'hello\nworld\t"escaped"');
     });
 
     test('should handle JSON integer values', () async {
@@ -178,7 +192,8 @@ void main() {
         "SELECT '42'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], 42);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, 42);
     });
 
     test('should handle JSON negative integer', () async {
@@ -186,7 +201,8 @@ void main() {
         "SELECT '-123'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], -123);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, -123);
     });
 
     test('should handle JSON float values', () async {
@@ -194,7 +210,8 @@ void main() {
         "SELECT '3.14159'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], 3.14159);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, 3.14159);
     });
 
     test('should handle JSON negative float', () async {
@@ -202,7 +219,8 @@ void main() {
         "SELECT '-2.718'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], -2.718);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, -2.718);
     });
 
     test('should handle JSON scientific notation', () async {
@@ -210,7 +228,8 @@ void main() {
         "SELECT '1.23e10'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], 1.23e10);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, 1.23e10);
     });
 
     test('should handle JSON boolean true', () async {
@@ -218,7 +237,8 @@ void main() {
         "SELECT 'true'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], true);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, true);
     });
 
     test('should handle JSON boolean false', () async {
@@ -226,7 +246,8 @@ void main() {
         "SELECT 'false'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], false);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, false);
     });
 
     test('should handle JSON null value', () async {
@@ -234,7 +255,8 @@ void main() {
         "SELECT 'null'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], null);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, null);
     });
 
     test('should handle JSON zero', () async {
@@ -242,7 +264,8 @@ void main() {
         "SELECT '0'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], 0);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, 0);
     });
 
     test('should handle JSON array of strings', () async {
@@ -250,7 +273,8 @@ void main() {
         "SELECT '[\"apple\", \"banana\", \"cherry\"]'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], ['apple', 'banana', 'cherry']);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, ['apple', 'banana', 'cherry']);
     });
 
     test('should handle JSON array of numbers', () async {
@@ -258,7 +282,8 @@ void main() {
         "SELECT '[1, 2.5, -3, 4.0]'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], [1, 2.5, -3, 4.0]);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, [1, 2.5, -3, 4.0]);
     });
 
     test('should handle JSON array of booleans', () async {
@@ -266,7 +291,8 @@ void main() {
         "SELECT '[true, false, true]'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], [true, false, true]);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, [true, false, true]);
     });
 
     test('should handle JSON array with mixed types', () async {
@@ -274,7 +300,8 @@ void main() {
         "SELECT '[1, \"text\", true, null, 3.14]'::JSON;",
       ))
           .fetchAll();
-      expect(result[0][0], [1, 'text', true, null, 3.14]);
+      final jsonResult = result[0][0]! as JsonValue;
+      expect(jsonResult.value, [1, 'text', true, null, 3.14]);
     });
   });
 }

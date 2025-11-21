@@ -232,10 +232,9 @@ class ResultSetImpl extends ResultSet {
             return null;
           }
           try {
-            return jsonDecode(jsonString);
+            return JsonValue(jsonDecode(jsonString));
           } catch (e) {
-            // If JSON parsing fails, return the string as-is
-            return jsonString;
+            return JsonValue(jsonString, isValid: false);
           }
         },
       );

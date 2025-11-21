@@ -55,8 +55,8 @@ android {
 def jniLibsDir = "$projectDir/src/main/jniLibs"
 
 def zipFiles = [
-    'arm64-v8a': 'https://github.com/TigerEyeLabs/duckdb-dart/releases/download/v1.4.1/libduckdb-android_arm64-v8a.zip',
-    'armeabi-v7a': 'https://github.com/TigerEyeLabs/duckdb-dart/releases/download/v1.4.1/libduckdb-android_armeabi-v7a.zip'
+    'arm64-v8a': 'https://github.com/TigerEyeLabs/duckdb-dart/releases/download/v1.4.4/libduckdb-android_arm64-v8a.zip',
+    'armeabi-v7a': 'https://github.com/TigerEyeLabs/duckdb-dart/releases/download/v1.4.4/libduckdb-android_armeabi-v7a.zip'
 ]
 
 task downloadAndExtractDuckDB {

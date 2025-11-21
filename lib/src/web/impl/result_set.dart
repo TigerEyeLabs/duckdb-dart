@@ -535,9 +535,10 @@ class ResultSetImpl extends ResultSet {
           // Parse JSON strings for columns marked as JSON type via Arrow metadata
           if (value is String && _isJsonColumn(colIndex)) {
             try {
-              value = jsonDecode(value);
+              value = JsonValue(jsonDecode(value));
             } catch (_) {
               // If JSON parsing fails, keep as string
+              value = JsonValue(value, isValid: false);
             }
           }
 
