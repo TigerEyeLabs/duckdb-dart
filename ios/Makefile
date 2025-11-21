@@ -7,6 +7,9 @@ IOS_PLATFORM_DEVICE = iPhoneOS
 # common environment variables
 export CMAKE_TOOLCHAIN_FILE=$(PWD)/ios.toolchain.cmake
 export BUILD_SHELL=0
+export CCACHE_DIR=$(PWD)/.ccache
+export BUILD_TESTING=OFF
+export BUILD_UNITTESTS=OFF
 
 .PHONY: all reset clean sim device destination help
 
@@ -24,7 +27,7 @@ duckdb: ## Clone DuckDb repo and apply patch
 	git -C $(DUCKDB_DIR) apply ../changes.patch
 
 destination:
-	mkdir -p ./Libraries/release
+	mkdir -p ./Libraries/release $(CCACHE_DIR)
 
 sim_x64: destination duckdb ## Simulator build for ARM64
 	@export OSX_BUILD_ARCH='x86_64'; \

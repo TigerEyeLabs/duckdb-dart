@@ -1,6 +1,6 @@
 # DuckDB.dart
 
-**Welcome to DuckDB.dart, the native Dart interface to [DuckDB](https://duckdb.org), a high-performance analytical database system.** With DuckDB.dart, you can **harness the power of DuckDB in your Dart applications across multiple platforms**, including Apple (macOS, iOS), Android, Linux, and Windows, delivering seamless integration and top-tier performance for your analytical workloads.
+**Welcome to DuckDB.dart, the native Dart interface to [DuckDB](https://duckdb.org), a high-performance analytical database system.** With DuckDB.dart, you can **harness the power of DuckDB in your Dart applications across multiple platforms**, including Apple (macOS, iOS), Android, Linux, Windows, and Web, delivering seamless integration and top-tier performance for your analytical workloads.
 
 <img src="duckdb-dart.png" alt="DuckDB.dart" style="display:block; margin-left:auto; margin-right:auto;">
 

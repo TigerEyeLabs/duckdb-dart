@@ -9,6 +9,9 @@ EXTENSIONS = 'icu;parquet;json'
 # common environment variables
 export CMAKE_TOOLCHAIN_FILE=$(PWD)/ios.toolchain.cmake
 export BUILD_SHELL=0
+export CCACHE_DIR=$(PWD)/.ccache
+export BUILD_TESTING=OFF
+export BUILD_UNITTESTS=OFF
 
 .PHONY: all reset clean duckdb simulator device release help
 
@@ -25,7 +28,7 @@ duckdb: ## Clone DuckDb repo and apply patch
 	git -C $(DUCKDB_DIR) apply ../changes.patch
 
 build_%: duckdb ## Build for specific architecture
-	@mkdir -p $(LIB_DIR)
+	@mkdir -p $(LIB_DIR) $(CCACHE_DIR)
 	@export OSX_BUILD_ARCH=$(if $(findstring x86_64,$*),x86_64,arm64); \
 	export IOS_PLATFORM=$(if $(findstring simulator,$*),iPhoneSimulator,iPhoneOS); \
 	export DUCKDB_PLATFORM=$(if $(findstring x86_64,$*),osx_amd64,osx_arm64); \
@@ -43,7 +46,7 @@ simulator: build_x86_64_simulator clean build_arm64_simulator ## Universal iOS S
 	@echo "Universal Simulator Build Complete"
 
 device: duckdb ## iOS Hardware Build
-	@mkdir -p $(LIB_DIR)
+	@mkdir -p $(LIB_DIR) $(CCACHE_DIR)
 	@mkdir -p $(DUCKDB_DIR)/build/release && cd $(DUCKDB_DIR)/build/release && \
 	OSX_BUILD_ARCH=arm64 IOS_PLATFORM=iPhoneOS DUCKDB_PLATFORM=osx_arm64 BUILD_SHELL=0 \
 	cmake -G Ninja -DFORCE_COLORED_OUTPUT=1 -DBUILD_EXTENSIONS=$(EXTENSIONS) -DLOCAL_EXTENSION_REPO="" \
@@ -52,6 +55,7 @@ device: duckdb ## iOS Hardware Build
 	-DCMAKE_BUILD_TYPE=Release ../.. && \
 	cmake --build . --target duckdb_framework
 	@cp $(DUCKDB_DIR)/src/include/duckdb.h $(DUCKDB_DIR)/build/release/src/duckdb.framework/Headers
+	@rm -rf $(LIB_DIR)/duckdb.framework
 	@mv $(DUCKDB_DIR)/build/release/src/duckdb.framework $(LIB_DIR)/duckdb.framework
 	@echo "iOS Device Build Complete"
 
