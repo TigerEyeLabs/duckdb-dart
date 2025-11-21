@@ -1,4 +1,4 @@
-VERSION = v1.4.1
+VERSION = v1.4.2
 DUCKDB_REPO = https://github.com/duckdb/duckdb
 DUCKDB_DIR = ./duckdb
 

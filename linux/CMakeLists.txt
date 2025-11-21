@@ -6,7 +6,7 @@ project(${PROJECT_NAME} LANGUAGES C CXX)
 # not be changed
 set(PLUGIN_NAME "dart_duckdb_plugin")
 
-set(DUCKDB_DOWNLOAD_URL "https://github.com/duckdb/duckdb/releases/download/v1.4.1/libduckdb-linux-amd64.zip")
+set(DUCKDB_DOWNLOAD_URL "https://github.com/duckdb/duckdb/releases/download/v1.4.2/libduckdb-linux-amd64.zip")
 set(DUCKDB_DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/duckdb_download")
 set(DUCKDB_ZIP_FILE "${DUCKDB_DOWNLOAD_DIR}/libduckdb-linux-amd64.zip")
 set(DUCKDB_EXTRACT_DIR "${DUCKDB_DOWNLOAD_DIR}/extracted")

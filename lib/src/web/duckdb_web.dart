@@ -31,7 +31,7 @@ class DuckDB extends api.DuckDB {
     return _initFuture!;
   }
 
-  static void registerWith() {
+  static void registerWith(dynamic registrar) {
     DuckDB.instance = duckdb as DuckDB?;
   }
 

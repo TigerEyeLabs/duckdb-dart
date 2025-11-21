@@ -13,4 +13,5 @@ export 'src/duckdb_base.dart' // Export the base implementation
 export 'src/types/date.dart';
 export 'src/types/decimal.dart';
 export 'src/types/interval.dart';
+export 'src/types/json_value.dart';
 export 'src/types/protocol.dart';

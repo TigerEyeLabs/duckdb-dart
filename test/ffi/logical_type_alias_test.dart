@@ -157,7 +157,7 @@ void main() {
       final rows = result.fetchAll();
 
       // Both should return as maps, but JSON is parsed from string
-      expect(rows[0][0], {'name': 'Alice', 'age': 30});
+      expect((rows[0][0]! as JsonValue).value, {'name': 'Alice', 'age': 30});
       expect(rows[0][1], {'name': 'Bob', 'age': 25});
 
       // But their logical types are different
@@ -212,7 +212,7 @@ void main() {
       // JSON should be auto-parsed
       final row = result.fetchAll()[0];
       expect(row[0], 1);
-      expect(row[1], {'event': 'login'});
+      expect((row[1]! as JsonValue).value, {'event': 'login'});
 
       await result.dispose();
     });

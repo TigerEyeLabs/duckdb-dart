@@ -221,6 +221,29 @@ DuckDB.dart supports the following platforms:
 - 🪟 Windows
 - 🕸️ Web
 
+### Web setup
+
+For Flutter web builds, add the following to `web/index.html` inside the `<head>` to load DuckDB WASM and Apache Arrow:
+
+```html
+  <script type="importmap">
+    {
+      "imports": {
+        "apache-arrow": "https://cdn.jsdelivr.net/npm/apache-arrow@17.0.0/+esm"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.1-dev222.0/+esm";
+    import * as arrow from "apache-arrow";
+    window.duckdbWasmReady = new Promise((resolve) => {
+      window.duckdbduckdbWasm = duckdb;
+      window.ArrowTable = arrow.Table;
+      resolve();
+    });
+  </script>
+```
+
 See platform-specific details in the [Building Instructions](BUILDING.md)
 
 ---

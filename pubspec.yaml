@@ -1,6 +1,6 @@
 name: dart_duckdb
-description: DuckDB for macOS, iOS, Android, Linux, and Windows
-version: 1.4.3
+description: DuckDB for macOS, iOS, Android, Linux, Windows, and Web
+version: 1.4.4
 homepage: https://github.com/TigerEyeLabs/duckdb-dart
 issue_tracker: https://github.com/TigerEyeLabs/duckdb-dart/issues
 
@@ -22,9 +22,11 @@ dependencies:
 
 dev_dependencies:
   ffigen: ^14.0.1
-  lints: ^5.1.1
   flutter_test:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+  lints: ^5.1.1
   test: ^1.26.3
 
 dependency_overrides:
@@ -56,4 +58,5 @@ flutter:
         pluginClass: DartDuckdbPlugin
       web:
         dartPluginClass: DuckDB
+        pluginClass: DuckDB
         fileName: src/web/duckdb_web.dart

@@ -24,6 +24,7 @@ import 'package:dart_duckdb/src/ffi/impl/vector/transformer_registry.dart';
 import 'package:dart_duckdb/src/types/date.dart';
 import 'package:dart_duckdb/src/types/decimal.dart';
 import 'package:dart_duckdb/src/types/interval.dart';
+import 'package:dart_duckdb/src/types/json_value.dart';
 import 'package:dart_duckdb/src/types/protocol.dart';
 import 'package:dart_duckdb/src/types/time.dart';
 import 'package:dart_duckdb/src/types/time_with_offset.dart';

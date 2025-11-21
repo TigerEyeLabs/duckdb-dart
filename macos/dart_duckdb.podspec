@@ -27,7 +27,7 @@ Pod::Spec.new do |s|
     mkdir -p Libraries/release  # Ensure the directory exists
     if [ ! -f "Libraries/release/libduckdb.dylib" ]; then
       echo "Downloading DuckDB library..."
-      curl -L -o libduckdb-osx-universal.zip "https://github.com/duckdb/duckdb/releases/download/v1.4.1/libduckdb-osx-universal.zip"
+      curl -L -o libduckdb-osx-universal.zip "https://github.com/duckdb/duckdb/releases/download/v1.4.2/libduckdb-osx-universal.zip"
       unzip -o libduckdb-osx-universal.zip -d Libraries/release/
       rm libduckdb-osx-universal.zip
     else

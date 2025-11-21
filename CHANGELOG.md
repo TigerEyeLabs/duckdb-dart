@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.4
+
+- upgrade duckdb binaries to 1.4.2
+- introduce the JsonValue for Json columns
+
 ## 1.4.3
 
 - Add web folders
