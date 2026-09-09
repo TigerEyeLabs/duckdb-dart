@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.5
+
+- remove the Flutter SDK requirement so the package can be used from pure Dart
+  projects (server-side, CLI, Docker); Flutter apps are unaffected
+
 ## 1.4.4
 
 - upgrade duckdb binaries to 1.4.2
