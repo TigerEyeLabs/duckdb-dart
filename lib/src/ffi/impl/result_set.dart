@@ -177,6 +177,12 @@ class ResultSetImpl extends ResultSet {
   Future<void> dispose() async {
     if (_isClosed) return;
 
+    _currentChunk?.dispose();
+    _currentChunk = null;
+    for (final type in _logicalTypes) {
+      type?.dispose();
+    }
+
     _finalizer.detach(this);
     _finalizable.dispose();
 
